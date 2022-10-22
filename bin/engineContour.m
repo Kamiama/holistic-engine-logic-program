@@ -100,7 +100,7 @@ elseif geometry_type == "crude"
     % calculate chamber volume & length
     vol_chamber = L_star * A_t; % volume of entire chamber [in^3]
     L_converging = -min(x_converging_linear); % length of converging section [in]
-    vol_converging = pi * trapz(fliplr((double(x_converging_linear)) .^ 2), fliplr((double(y_converging_linear)) .^ 2)); % volume of converging section [in^3]
+    vol_converging = pi / 3 * -min(x_converging_linear) * (R_c ^ 2 + R_c + R_t ^ 2 + R_t); % volume of converging section [in^3]
     vol_cylindrical = vol_chamber - vol_converging; % volume of cylindrical section [in^3]
     L_c = vol_cylindrical / (pi * R_c ^ 2); % chamber length [in]
     
