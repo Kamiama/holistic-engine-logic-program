@@ -1,0 +1,10 @@
+problem rocket eq
+    p(psi) = 300
+    o/f = 2.3
+    sup = 1, 1.0262, 3.9854
+    sub = 1.0002, 1
+reac
+    fuel = Jet-A(L)
+    ox = O2(L)
+outp trans
+end
