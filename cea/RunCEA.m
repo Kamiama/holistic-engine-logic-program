@@ -1,15 +1,12 @@
-% -------------------------------------
-%  CEA Wrapper for Engine Sizing Code
+%% Engine Sizing Code CEA Wrapper
 % Author: Kamon Blong (kblong@purdue.edu)
 % First Created: 7/17/2022
 % Last Updated: 
-% -------------------------------------
 
-function [cstar, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, file_name)
+function [c_star, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, file_name, throat, convert_to_imperial)
 
 %{ 
-Description: Based off of cea_rocket_example.m and previous code by Tim
-    Kayser. Sends engine performance and fuel properties to NASA CEA where
+Description: Sends engine performance and fuel properties to NASA CEA where
     a bunch of voodoo stoichiometry magic is performed to return relevant
     values for combustion properties of propellants.
 
@@ -31,29 +28,42 @@ CEA_SAVE_FILE = 'cea.mat';
 % For example: inp('key') = value.
 inp = containers.Map;
 
+%% CEA Inputs
+% run setup
+inp('type') = 'eq';              % sets the type of CEA calculation
+inp('file_name') = file_name;    % input/output file name
 
-inp('type') = 'eq';                   % Sets the type of CEA calculation
-inp('p') = P_c;                        % Chamber pressure
-inp('p_unit') = 'psi';                % Chamber pressure units
-inp('o/f') = OF;                      % Mixture ratio
-if sub(1) || sup(1) ~= 0
-    inp('sub') = sub;                     % subsonic area ratios
-    inp('sup') = sup;                   % supersonic area ratios
+% general parameters
+inp('p') = P_c;                  % chamber pressure
+inp('p_unit') = 'psi';           % chamber pressure units
+if sub(1) && sup(1) ~= 0
+    inp('sub') = sub;            % subsonic area ratios
+    inp('sup') = sup;            % supersonic area ratios
+elseif throat
+    inp('sup') = 1;              % supersonic area ratios
+elseif sub(1)
+    inp('sub') = sub;            % subsonic area ratios
+elseif sup(1)
+    inp('sup') = sup;            % supersonic area ratios
 else
-    inp('pip') = P_c / P_e;                 % Pressure ratios
+    inp('pip') = P_c / P_e;      % pressure ratios  
 end
-inp('fuel') = fuel;            % Fuel name from thermo.inp
+
+% propellant inputs
+inp('fuel') = fuel; % fuel name from thermo.inp
 if fuel_weight(1) ~= 0
     inp('fuel_wt%') = fuel_weight;
 end
-inp('ox') = oxidizer;               % Ox name from thermo.inp
-if fuel_temp(1) && oxidizer_temp(1) ~= 0
-    inp('ox_t') = oxidizer_temp;
+inp('ox') = oxidizer; % ox name from thermo.inp
+if fuel_temp(1) 
     inp('fuel_t') = fuel_temp;
 end
+if oxidizer_temp(1)
+    inp('ox_t') = oxidizer_temp;
+end
+inp('o/f') = OF; % oxidizer / fuel ratio
 
-inp('file_name') = file_name;   % Input/output file name
-
+%% Run CEA
 if CEA_RUN
     data = cea_rocket_run(inp);     % Call the CEA MATLAB code
     save(CEA_SAVE_FILE, 'data');
@@ -67,6 +77,7 @@ end
 % will only contain a single entry under data('fr').
 data_eq = data('eq');
 
+%% Extract Outputs
 % Use keys(data_eq) or keys(data_fr) to see the contents of each map
 % respectively. Every output of CEA is contained in these keys, including
 % molar concentrations. Most keys contain a 3D array with columns
@@ -76,7 +87,7 @@ data_eq = data('eq');
 % be used to reduce the number of dimensions appropriately. Read the notes
 % at the top of cea_rocket_read.m for more details.
 isp = squeeze(data_eq('isp'));
-cstar = squeeze(data_eq('cstar'));
+c_star = squeeze(data_eq('cstar'));
 exp_ratio = data_eq('ae/at');
 M = squeeze(data_eq('mach'));
 gamma = squeeze(data_eq('gammas'));
@@ -88,19 +99,24 @@ Pr = squeeze(data_eq('prandtl'));
 Mw = squeeze(data_eq('m'));
 k = squeeze(data_eq('k'));
 son = squeeze(data_eq('son'));
+cp = squeeze(data_eq('cp'));
 
 oxidizer_temp = ('ox_t');
 fuel_temp = ('fuel_t');
 
-% convert and correct units
-%exp_ratio = 1 / M(end) * ((2 + (gamma(1) - 1 ) * M(end) ^ 2) / (gamma(1) + 1)) ^ ((gamma(1) + 1) / (2 * (gamma(1) - 1))); % calculate expansion ratio manually
-P = P.* 1.45038E-4; % convert [Pa] to [psi]
-isp = isp(end) / 9.8067; % normalize isp to seconds
-exp_ratio = exp_ratio(end); % select expansion ratio
-cstar = cstar(1) * 3.281; % convert [m/s] to [ft/s]
-T = T .* 1.8; % convert [K] to [R]
-rho = rho * 3.613E-5; % convert [kg/m^3] to [lbm/in^3]
-mu = mu * 1.450E-4; % convert [Pa-s] to [psi-s]
-Mw = Mw * 2.205; % convert [kg/kmol] to [lbm/kmol]
-k = k * 0.5782; % convert [W/m-K] to [Btu/hr-ft-R]
+%% Convert & Correct Outputs
+if convert_to_imperial
+    %exp_ratio = 1 / M(end) * ((2 + (gamma(1) - 1 ) * M(end) ^ 2) / (gamma(1) + 1)) ^ ((gamma(1) + 1) / (2 * (gamma(1) - 1))); % calculate expansion ratio manually
+    P = P.* 1.45038E-4; % convert [Pa] to [psi]
+    isp = isp(end) / 9.8067; % normalize isp to seconds
+    exp_ratio = exp_ratio(end); % select expansion ratio
+    c_star = c_star(1) * 3.281; % convert [m/s] to [ft/s]
+    T = T .* 1.8; % convert [K] to [R]
+    rho = rho * 3.613E-5; % convert [kg/m^3] to [lbm/in^3]
+    mu = mu * 1.450E-4; % convert [Pa-s] to [psi-s]
+    Mw = Mw * 2.205; % convert [kg/kmol] to [lbm/kmol]
+    k = k * 0.5782; % convert [W/m-K] to [Btu/hr-ft-R]
+else
+    isp = isp(end);
+    c_star = c_star(1);
 end

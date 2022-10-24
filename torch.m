@@ -1,9 +1,17 @@
-% -------------------------------------
-%%   Ultimate Engine Sizing Code v1.0
+%% Engine Sizing Code Main
 % Author: Kamon Blong (kblong@purdue.edu)
 % First Created: 7/10/2022
 % Last Updated: 
+
 %{ 
+Description:
+
+Inputs:
+- All values from input.xslx
+
+Outputs: 
+- An entire engine
+
 Assumptions: Currently assumes a stationary test engine with no regard for
 changes in gravity or atmospheric pressure. Additionally assumes an
 ideal rocket engine (perfect propellant mixing, gaseous flow, perfect gas
@@ -12,9 +20,8 @@ discontinuities, steady mDot, no transience, all exhaust contributes to
 thrust, characteristics are uniform at any point along an axial slice of
 the engine, and chemical equilibrium is constant axially throughout the engine 
 (Sutton 46)). Without tinputing a specific inlet temperature for
-propellants, NASA CEA (and therefore this program) also assumes that
-ordinary propellants are stored at room temperature and cryogens at their
-boiling point.
+propellants, it is assumed that ordinary propellants are stored at room 
+temperature and cryogens at their boiling point.
 %}
 
 clear;
@@ -55,7 +62,7 @@ input_data = readmatrix('input.xlsx','NumHeaderLines',1);
     enableFigures = 1;
     enableDebug = 1;
     if enableREFPROP
-        sizeFluids = 1;
+        sizeFluids = 0;
         sizeInjector = 1;
         sizeCooling = 1;
     end
@@ -69,33 +76,72 @@ input_data = readmatrix('input.xlsx','NumHeaderLines',1);
     P_a = 14.7;           % ambient pressure [psi]
     P_e = P_a;            % exit pressure [psi] (equals P_a for optimal expansion)
     eff_c_star = 0.9;     % c* efficiency
-    eff_c_f = 0.9;        % cF efficiency
+    eff_c_f = 1;        % cF efficiency
     
     % fuel properties
     fuel = {'Jet-A(L)'};  % fuel formula for NASA CEA
     fuel_weight = 0;      % fuel weights, does nothing now
-    oxidizer = 'O2(L)';   % oxidizer formula for NASA CEA
-    fuel_temp = 0;        % inlet fuel temperature [K]
-    oxidizer_temp = 0;    % inlet oxidizer temperature [K]
-    OF = 2.3;             % O/F ratio
+    oxidizer = {'O2(L)'}; % oxidizer formula for NASA CEA
+    OF = 2.1;             % O/F ratio
     time_burn = 2;        % burn time [sec]
+
+    % correlate NASA CEA propellant names with REFPROP names and assign temperature values
+    if fuel(1) == "Jet-A(L)" || fuel(1) == "RP-1"
+        fuel_REFPROP = 'RP1';
+        fuel_temp = 293.15;
+    elseif fuel(1) == "C2H5OH(L)"
+        fuel_REFPROP = 'ethanol';
+        fuel_temp = 293.15;
+    elseif fuel(1) == "CH4(L)"
+        fuel_REFPROP = 'methane';
+        fuel_temp = 111.6;
+    elseif fuel(1) == "CH4"
+        fuel_REFPROP = 'methane';
+        fuel_temp = 293.15;
+    elseif fuel(1) == "H2(L)"
+        fuel_REFPROP = 'hydrogen';
+        fuel_temp = 20.38;
+    elseif fuel(1) == "H2"
+        fuel_REFPROP = 'hydrogen';
+        fuel_temp = 293.15;
+    else
+        if enableDebug
+            fprintf("\nWarning: unrecognized propellant")
+        end
+    end
+
+    if oxidizer(1) == "O2(L)"
+        oxidizer_REFPROP = 'oxygen';
+        oxidizer_temp = 90.17;
+    elseif oxidizer(1) == "O2"
+        oxidizer_REFPROP = 'oxygen';
+        oxidizer_temp = 293.15;
+    elseif oxidizer(1) == "N2O"
+        oxidizer_REFPROP = 'oxygen';
+        oxidizer_temp = 184.7;
+    elseif oxidizer(1) == "H2O2(L)"
+        oxidizer_REFPROP = 'h2o2';
+        oxidizer_temp = 293.15;
+    else
+        if enableDebug
+            fprintf("\nWarning: unrecognized propellant")
+        end
+    end
+
+%     fuel_temp = 0;        % inlet fuel temperature [K]
+%     oxidizer_temp = 0;    % inlet oxidizer temperature [K]
     
     % geometry properties
-    geometry_type = "conical";
+    geometry_type = "crude";
     bell_pct = .8;            % percent of bell nozzle
     conical_half_angle = 15;  % conical half angle [deg]
     L_crude_throat = .25;     % length of straight throat section [in]
 
-    theta_i = 25; % nozzle expansion (initial) angle [degrees]
-    theta_e = 11; % nozzle exit angle [degrees] 
-    % derived emperically from http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf,
-    % matching graph to an equation is a possible improvement for the future
-
-    D_t = 0;
-    L_star = 75;       % L*, characteristic combustion length [in]
+    D_t = 7/8;
+    L_star = 45;       % L*, characteristic combustion length [in]
     conv_angle = 30;   % convergence 
     con_ratio = 0;     % contraction ratio
-    D_c = 3.5;         % chamber diameter [in]
+    D_c = 2.5;         % chamber diameter [in]
     
     % injector properties
     injector_type = "swirl"; % injector type
@@ -109,10 +155,10 @@ input_data = readmatrix('input.xlsx','NumHeaderLines',1);
     vol_tank = 0;   % volume of propellant tanks [in^3]
     p_tank = 1000;  % tank pressure [psi]
 
-% parse tooling and stock sizes
+    % miscellaneous
     bar_size = 4.5; % bar stock diameter [in]
 
-% define constants
+    % define constants
     g = 32.174;     % gravitational constant [ft/sec^2]
 
 %% Run NASA CEA
@@ -125,7 +171,7 @@ CEA_input_name = append(CEA_name_prefix, '.inp');
 CEA_output_name = append(CEA_name_prefix, '.out');
 
 % run CEA
-[cea_c_star, cea_isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name);
+[cea_c_star, cea_isp, exp_ratio, M, gamma, ~, T, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
 
 %% Intermediate Calculations
 
@@ -183,41 +229,37 @@ if con_ratio
 
 % size based off chamber diameter
 elseif D_c
-    A_c = pi * (D_c / 2) ^ 2;  % chamber area [in^2]
-    con_ratio = A_c / A_t;     % contraction ratio
+    A_c = pi * (D_c / 2) ^ 2;    % chamber area [in^2]
+    con_ratio = A_c / A_t;       % contraction ratio
 
 % if no contraction ratio or chamber diameter is assigned
 else
-    con_ratio = 8 * (2 * sqrt(A_t / pi)) ^ -.6 + 1.25; % contraction ratio
-    A_c = A_t * con_ratio; % chamber area [in^2]
+    con_ratio = 8 * (2 * sqrt(A_t / pi)) ^ -.6 + 1.25;  % contraction ratio (I forget where I got this equation from, please don't kill me)
+    A_c = A_t * con_ratio;                              % chamber area [in^2]
 end
 
 D_e = 2 * sqrt(A_e / pi); % exit diameter [in]
 D_c = 2 * sqrt(A_c / pi); % chamber diameter [in]
-R_t = D_t / 2; % throat radius [in]
-R_e = D_e / 2; % exit radius [in]
+R_t = D_t / 2;            % throat radius [in]
+R_e = D_e / 2;            % exit radius [in]
 
 %% Generate Nozzle Contour
-[x_contour, r_contour, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, theta_i, theta_e, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size);
+[x_contour, r_contour, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size);
 
 %% Cooling Calculations
 if sizeCooling
     % factor in film cooling
     if film_pct
-    %    [] = filmCalculations();
+    %    [] = sizeFilm();
     end
 
     % size regenerative cooling
     if cooling_type == "regen"
-        subsonic_area_ratios = (pi * r_contour(x_contour < 0) .^ 2) / A_t;
-        supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
-        [cea_c_star, cea_isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, subsonic_area_ratios, supersonic_area_ratios, CEA_input_name);
-        vel = son .* M; % axial chamber velocity [ft/s]
-        %[] = regenCalculations(x_contour, y_contour, R_t, nozzle_regen_pct, M, gamma, P, T, rho, mu, Pr, Mw, k, son, vel);
+        %[] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct, M, gamma, P, T, rho, mu, Pr, Mw, k, son, vel);
 
     % size ablative cooling
     elseif cooling_type == "ablative"
-        %[] = ablativeCalculations(x_contour, y_contour);
+        %[] = sizeAblative(x_contour, y_contour);
     end 
 end
 
@@ -240,20 +282,31 @@ end
 %% Fluid Systems Sizing
 % calculate required mass of propellants
 if sizeFluids
+
+%     oxidizer_density = refpropm('D', 'T', oxidizer_temp, 'P', P_c * u.PSI2KPA, oxidizer_REFPROP) * u.KGM32LBIN3; % [lb/in^3]
+%     fuel_density = refpropm('D', 'T', fuel_temp, 'P', P_c * u.PSI2KPA, 'ethanol') * u.KGM32LBIN3; % [lb/in^3]
+
+    % size fluid system based off of tank size
     if vol_tank
-        if m_dot_OX / oxidizer_density > m_dot_FUEL / fuel_density % oxidizer is limiting propellant
+
+        % oxidizer is limiting propellant
+        if m_dot_OX / oxidizer_density > m_dot_FUEL / fuel_density 
             oxidizer_mass = oxidizer_density * vol_tank;
             oxidizer_vol = oxidizer_mass / oxidizer_density;
             time_burn = oxidizer_mass / m_dot_OX;
             fuel_mass = oxidizer_mass / OF;
             fuel_vol = fuel_mass / fuel_density;
-        else % fuel is limiting propellant
+
+        % fuel is limiting propellant
+        else 
             fuel_mass = fuel_density * vol_tank;
             fuel_vol = fuel_mass / fuel_density;
             time_burn = fuel_mass / m_dot_FUEL;
             oxidizer_mass = fuel_mass * OF;
             oxidizer_vol = oxidizer_mass / oxidizer_density;
         end
+
+    % size fluid system based off of burn time
     else
         oxidizer_mass = time_burn * m_dot_OX; 
         oxidizer_vol = oxidizer_mass / oxidizer_density;
@@ -262,20 +315,17 @@ if sizeFluids
     end
     impulse = time_burn * F; % total impulse [N-s]
 
-    % calculate regulator flow rates
-    m_dot_N2 = 0;
+    % output fluid system information
+    fprintf('\n-------- Fluid System Outputs -------\n')
+    disp(['                Mass Oxidizer (lb): ' num2str(oxidizer_mass)]);
+    disp(['                    Mass Fuel (lb): ' num2str(fuel_mass)]);
+    disp(['            Volume Oxidizer (in^3): ' num2str(oxidizer_vol)]);
+    disp(['                Volume Fuel (in^3): ' num2str(fuel_vol)]);
+    disp(['           Maximum Burn Time (sec): ' num2str(time_burn)]);
+    disp(['               Total Impulse (sec): ' num2str(impulse)]);
+    fprintf('-------- Fluid System Outputs -------\n')
 
 end
-
-% output fluid system information
-fprintf('\n-------- Fluid System Outputs -------\n')
-disp(['                Mass Oxidizer (lb): ' num2str(oxidizer_mass)]);
-disp(['                    Mass Fuel (lb): ' num2str(fuel_mass)]);
-disp(['            Volume Oxidizer (in^3): ' num2str(oxidizer_vol)]);
-disp(['                Volume Fuel (in^3): ' num2str(fuel_vol)]);
-disp(['           Maximum Burn Time (sec): ' num2str(time_burn)]);
-disp(['               Total Impulse (sec): ' num2str(impulse)]);
-fprintf('-------- Fluid System Outputs -------\n')
 
 %% Output Results
 

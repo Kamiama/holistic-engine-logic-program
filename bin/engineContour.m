@@ -1,11 +1,9 @@
-% -------------------------------------
-% Engine Contour Generator
+%% Engine Contour Generator
 % Author: Kamon Blong (kblong@purdue.edu)
 % First Created: 7/17/2022
-% Last Updated: 8/28/2022
-% -------------------------------------
+% Last Updated: 
 
-function [x_total, r_total, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, theta_i, theta_e, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size)
+function [x_total, r_total, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size)
 
 %{ 
 Description: 
@@ -17,9 +15,8 @@ Outputs:
 - 
 %}
 
-% - Would like to fit an equation for initial and exit angles given a bell
-% percent and expansion ratio - would make code more modular and require
-% less inputs
+% interpolate initial and exit rao angles - Chris Bermack
+[theta_i, theta_e] = raoAngleInterpolation(exp_ratio); 
 
 % set conical half angle
 if geometry_type == "conical"

@@ -51,6 +51,8 @@ function u = convertUnits()
     u.PA2B = 1 / u.B2PA;             % Bars per Pascal
     u.B2PSI = 14.50377;              % PSI per Bar
     u.PSI2B = 1 / u.B2PSI;           % Bar per PSI
+    u.KPA2PSI = u.N2LBF / (u.M2IN^2) * 1000; % PSI per KiloPascal
+    u.PSI2KPA = 1 / u.PA2PSI;         % KiloPascal per PSI
 
     % MASS CONVERSIONS:
     % LB: pound [lbm]
@@ -120,5 +122,9 @@ function u = convertUnits()
     u.FPS2MPS = 1 / u.MPS2FPS;  % Meters per second per fps
     u.MPH2FPS = 1.467;          % Feet per second per miph
     u.FPS2MPH = 1 / u.MPH2FPS;  % Miles per hour per fps
+
+    % DENSITY CONVERSIONS:
+    u.KGM32LBIN3 = 1 / 27680;
+    u.LBIN32KGM3 = 1 / u.KGM32LBIN3;
 
 end
