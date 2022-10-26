@@ -3,7 +3,7 @@ problem rocket eq
     o/f = 1.2
     pip = 10.2041
 reac
-    fuel = Jet-A(L) t(K) = 293.150
+    fuel = Jet-A(L) t(K) = 293.150 wt% = 100.000
     ox = O2(L) t(K) = 90.170
 outp trans
 end
