@@ -28,7 +28,7 @@ for OF = min_value : step_value : max_value
     [c_star, isp, ~, ~, ~, P, T, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, 0, oxidizer, 0, OF, 0, 0, file_name, 0, 0);
     OF_matrix(counter) = min_value + step_value * (counter - 1);
     T_matrix(counter) = T(1);
-    isp_matrix(counter) = isp(1);
+    isp_matrix(counter) = isp(1);*
     counter = counter + 1;
 end
 

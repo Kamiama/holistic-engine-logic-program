@@ -135,9 +135,12 @@ elseif geometry_type == "bell"
     x_Q = (c2 - c1) / (m1 - m2);
     y_Q = (m1 * c2 - m2 * c1) / (m1 - m2);
 
+    x_Q = 1;
+    y_Q = 1;
+    
     % solve bezier curve for nozzle contour
     nozzle_pos = linspace(0, 1); % nozzle section made up of 100 points
-    x_nozzle = (1 - nozzle_pos) .^ 2 .* x_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* x_Q + nozzle_pos .^ 2 .* x_E;
+    x_nozzle = (1 - nozzle_pos) .^ 2 .* x_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* x_Q( + nozzle_pos .^ 2 .* x_E;
     y_nozzle = (1 - nozzle_pos) .^ 2 .* y_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* y_Q + nozzle_pos .^ 2 .* y_E;
 
 % generate curve for crude conical geometry

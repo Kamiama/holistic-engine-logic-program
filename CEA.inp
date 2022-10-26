@@ -1,9 +1,9 @@
 problem rocket eq
-    p(psi) = 150
-    o/f = 1.2
-    pip = 10.2041
+    p(psi) = 1200
+    o/f = 6
+    pip = 600
 reac
-    fuel = Jet-A(L) t(K) = 293.150 wt% = 100.000
+    fuel = H2(L) t(K) = 20.380 wt% = 100.000
     ox = O2(L) t(K) = 90.170
 outp trans
 end

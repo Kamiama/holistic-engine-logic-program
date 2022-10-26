@@ -1,6 +1,6 @@
 problem rocket eq
     p(psi) = 300
-    o/f = 3.5
+    o/f = 1.5
     pip = 20.4082
 reac
     fuel = Jet-A(L)

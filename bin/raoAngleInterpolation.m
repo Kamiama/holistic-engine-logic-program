@@ -1,5 +1,8 @@
-% Bell Nozzle Angles Spline Interpolation
+%% HELP Rao Angle Interpolation
 % Author: Chris Bermack
+% First Created: 10/22/2022
+% Last Updated: 10/24/2022
+
 % nozzle throat and exit angles for 80% bell curve nozzle
 % input: expRatioInput (nozzle expansion ratio) to 2 decimal places,
 % between 4 and 30

@@ -1,9 +1,7 @@
-% -------------------------------------
-%    Unit Conversions Function v1.1.2
+%% Unit Conversions Function
 % Author: Liam Schenk
-% First Created: 1/30/2022
-% Last Updated: 7/17/2022 by Kamon Blong
-% -------------------------------------
+% First Created: 7/10/2022
+% Last Updated: 10/26/2022 by Kamon Blong
 
 function u = convertUnits()
 
@@ -51,8 +49,8 @@ function u = convertUnits()
     u.PA2B = 1 / u.B2PA;             % Bars per Pascal
     u.B2PSI = 14.50377;              % PSI per Bar
     u.PSI2B = 1 / u.B2PSI;           % Bar per PSI
-    u.KPA2PSI = u.N2LBF / (u.M2IN^2) * 1000; % PSI per KiloPascal
-    u.PSI2KPA = 1 / u.PA2PSI;         % KiloPascal per PSI
+    u.MPA2PSI = 145.0377;            % Megapascals per PSI
+    u.PSI2MPA = 1 / u.MPA2PSI;       % PSI per Megapascals
 
     % MASS CONVERSIONS:
     % LB: pound [lbm]

@@ -1,17 +1,8 @@
-%% Engine Sizing Code Main
+%% Holistic Engine Logic Program (HELP)
 % Author: Kamon Blong (kblong@purdue.edu)
 % First Created: 7/10/2022
 % Last Updated: 
-
 %{ 
-Description:
-
-Inputs:
-- All values from input.xslx
-
-Outputs: 
-- An entire engine
-
 Assumptions: Currently assumes a stationary test engine with no regard for
 changes in gravity or atmospheric pressure. Additionally assumes an
 ideal rocket engine (perfect propellant mixing, gaseous flow, perfect gas
@@ -20,28 +11,37 @@ discontinuities, steady mDot, no transience, all exhaust contributes to
 thrust, characteristics are uniform at any point along an axial slice of
 the engine, and chemical equilibrium is constant axially throughout the engine 
 (Sutton 46)). Without tinputing a specific inlet temperature for
-propellants, it is assumed that ordinary propellants are stored at room 
-temperature and cryogens at their boiling point.
+propellants, NASA CEA (and therefore this program) also assumes that
+ordinary propellants are stored at room temperature and cryogens at their
+boiling point.
 %}
 
 clear;
-%clc;
+clc;
+
+%% Import Data
+% import input properties
+input_data = 'input_example_imperial.xlsx';
 
 %% Identify OS & Generate Paths 
 % identify OS
 if ismac || isunix
     function_path = append(pwd, '/bin');
     cea_path = append(pwd, '/cea');
+    input_path = append(pwd, '/input');
     output_path = append(pwd, '/output');
 elseif ispc
     function_path = append(pwd, '\bin');
     cea_path = append(pwd, '\cea');
+    input_path = append(pwd, '\input');
     output_path = append(pwd, '\output');
 end
+
 % assign paths
 main_path = cd;
 addpath(function_path);
 addpath(cea_path);
+addpath(input_path)
 addpath(output_path);
 u = convertUnits;
 
@@ -51,10 +51,6 @@ run_description = input('Run Description: ', 's'); % run description that will b
 write_date = datestr(now, '_mm-dd-yy_HH:MM'); % date that will be added to output file header
 file_name = strcat(run_description, write_date); % output file name
 
-%% Import Data
-% import input properties
-input_data = readmatrix('input.xlsx','NumHeaderLines',1);
-
 %% Program Run Definition
 % parse input run properties
     sizeEngine = 1;
@@ -62,7 +58,7 @@ input_data = readmatrix('input.xlsx','NumHeaderLines',1);
     enableFigures = 1;
     enableDebug = 1;
     if enableREFPROP
-        sizeFluids = 0;
+        sizeFluids = 1;
         sizeInjector = 1;
         sizeCooling = 1;
     end
@@ -71,95 +67,129 @@ input_data = readmatrix('input.xlsx','NumHeaderLines',1);
 % parse & convert input properties
 
     % performance properties
-    F = 1;              % engine thrust [lbf]
-    P_c = 150;            % chamber pressure [psi]
-    P_a = 14.7;           % ambient pressure [psi]
-    P_e = P_a;            % exit pressure [psi] (equals P_a for optimal expansion)
-    eff_c_star = 0.9;     % c* efficiency
-    eff_c_f = 1;        % cF efficiency
+        F = xlsread(input_data,'Engine', 'C8');                    % engine thrust [lbf]
+        P_c = xlsread(input_data, 'Engine', 'C9');                 % chamber pressure [psi]
+        P_a = xlsread(input_data, 'Engine', 'C11');                % ambient pressure [psi]
+        P_e = xlsread(input_data, 'Engine', 'C10');                % exit pressure [psi] (equals P_a for optimal expansion)
+        eff_c_star = xlsread(input_data, 'Engine', 'C12') / 100;   % c* efficiency
+        eff_c_f = xlsread(input_data, 'Engine', 'C13') / 100;      % cF efficiency
     
-    % fuel properties
-    fuel = {'Jet-A(L)'};  % fuel formula for NASA CEA
-    fuel_weight = 0;      % fuel weights, does nothing now
-    oxidizer = {'O2(L)'}; % oxidizer formula for NASA CEA
-    OF = 1.2;             % O/F ratio
-    time_burn = 2;        % burn time [sec]
+    % propellant properties
+        [~, txt] = xlsread(input_data, 'Engine', 'H10');
+        fuel1 = string(txt);                                       
+        [~, txt] = xlsread(input_data, 'Engine', 'H12');
+        fuel2 = string(txt);                                       
+        fuel = [fuel1, fuel2];                                     % fuel formula for NASA CEA
+        fuel_weight = xlsread(input_data,'Engine', 'H13');         % fuel weights
+        [~, txt] = xlsread(input_data, 'Engine', 'H11');
+        oxidizer = string(txt);                                    % oxidizer formula for NASA CEA
+        fuel_temp = xlsread(input_data,'Engine', 'H17');           % inlet fuel temperature [K]
+        oxidizer_temp = xlsread(input_data,'Engine', 'H18');       % inlet oxidizer temperature [K]
+        OF = xlsread(input_data, 'Engine', 'H14');                 % O/F ratio
+        time_burn = xlsread(input_data, 'Engine', 'C14');          % burn time [sec]
 
     % correlate NASA CEA propellant names with REFPROP names and assign temperature values
-    if fuel(1) == "Jet-A(L)" || fuel(1) == "RP-1"
-        fuel_REFPROP = 'RP1';
-        fuel_temp = 293.15;
-    elseif fuel(1) == "C2H5OH(L)"
-        fuel_REFPROP = 'ethanol';
-        fuel_temp = 293.15;
-    elseif fuel(1) == "CH4(L)"
-        fuel_REFPROP = 'methane';
-        fuel_temp = 111.6;
-    elseif fuel(1) == "CH4"
-        fuel_REFPROP = 'methane';
-        fuel_temp = 293.15;
-    elseif fuel(1) == "H2(L)"
-        fuel_REFPROP = 'hydrogen';
-        fuel_temp = 20.38;
-    elseif fuel(1) == "H2"
-        fuel_REFPROP = 'hydrogen';
-        fuel_temp = 293.15;
-    else
-        if enableDebug
-            fprintf("\nWarning: unrecognized propellant")
+        if fuel(1) == "Jet-A(L)" || fuel(1) == "RP-1"
+            fuel_REFPROP = 'RP1.mix';
+            fuel_temp = 293.15;
+        elseif fuel(1) == "C2H5OH(L)"
+            fuel_REFPROP = 'ethanol';
+            fuel_temp = 293.15;
+        elseif fuel(1) == "CH4(L)"
+            fuel_REFPROP = 'methane';
+            fuel_temp = 111.6;
+        elseif fuel(1) == "CH4"
+            fuel_REFPROP = 'methane';
+            fuel_temp = 293.15;
+        elseif fuel(1) == "H2(L)"
+            fuel_REFPROP = 'hydrogen';
+            fuel_temp = 20.38;
+        elseif fuel(1) == "H2"
+            fuel_REFPROP = 'hydrogen';
+            fuel_temp = 293.15;
+        else
+            if enableDebug
+                fprintf("\nWarning: unrecognized propellant")
+            end
         end
-    end
-
-    if oxidizer(1) == "O2(L)"
-        oxidizer_REFPROP = 'oxygen';
-        oxidizer_temp = 90.17;
-    elseif oxidizer(1) == "O2"
-        oxidizer_REFPROP = 'oxygen';
-        oxidizer_temp = 293.15;
-    elseif oxidizer(1) == "N2O"
-        oxidizer_REFPROP = 'oxygen';
-        oxidizer_temp = 184.7;
-    elseif oxidizer(1) == "H2O2(L)"
-        oxidizer_REFPROP = 'h2o2';
-        oxidizer_temp = 293.15;
-    else
-        if enableDebug
-            fprintf("\nWarning: unrecognized propellant")
+    
+        if oxidizer(1) == "O2(L)"
+            oxidizer_REFPROP = 'oxygen';
+            oxidizer_temp = 90.17;
+        elseif oxidizer(1) == "O2"
+            oxidizer_REFPROP = 'oxygen';
+            oxidizer_temp = 293.15;
+        elseif oxidizer(1) == "N2O"
+            oxidizer_REFPROP = 'oxygen';
+            oxidizer_temp = 184.7;
+        elseif oxidizer(1) == "H2O2(L)"
+            oxidizer_REFPROP = 'h2o2';
+            oxidizer_temp = 293.15;
+        else
+            if enableDebug
+                fprintf("\nWarning: unrecognized propellant")
+            end
         end
-    end
-
-%     fuel_temp = 0;        % inlet fuel temperature [K]
-%     oxidizer_temp = 0;    % inlet oxidizer temperature [K]
     
     % geometry properties
-    geometry_type = "crude";
-    bell_pct = .8;            % percent of bell nozzle
-    conical_half_angle = 15;  % conical half angle [deg]
-    L_crude_throat = .125;     % length of straight throat section [in]
 
-    D_t = .09375;
-    L_star = 20;       % L*, characteristic combustion length [in]
-    conv_angle = 30;   % convergence 
-    con_ratio = 0;     % contraction ratio
-    D_c = .3125;         % chamber diameter [in]
-    
+        % definition
+        [~, txt] = xlsread(input_data, 'Engine', 'M10');      % geometry type
+        geometry_type = string(txt);
+        [~, txt] = xlsread(input_data, 'Engine', 'M11');      % sizing method
+        sizing_method = string(txt);       
+        [~, txt] = xlsread(input_data, 'Engine', 'M12');      % converging method
+        converging_method =string(txt);   
+
+        % general
+        L_star = xlsread(input_data, 'Engine', 'M15');              % L*, characteristic combustion length [in]
+        conv_angle = xlsread(input_data, 'Engine', 'M16');          % convergence 
+        con_ratio = xlsread(input_data, 'Engine', 'M17');           % contraction ratio
+        D_c = xlsread(input_data, 'Engine', 'M18');                 % chamber diameter [in]
+        D_t = xlsread(input_data, 'Engine', 'M19');                 % throat diameter [in]
+
+        % bell
+        bell_pct = xlsread(input_data, 'Engine', 'M22') / 100;      % percent of bell nozzle
+
+        % conical
+        conical_half_angle = xlsread(input_data, 'Engine', 'M25');  % conical half angle [deg]
+        L_crude_throat = xlsread(input_data, 'Engine', 'M26');      % length of straight throat section [in]
+        bar_size = xlsread(input_data, 'Engine', 'M27'); % bar stock diameter [in]
+            
     % injector properties
-    injector_type = "swirl"; % injector type
+
+        % general parameters
+        [~, txt] = xlsread(input_data, 'Injector', 'C8');
+        injector_type = string(txt);                                % injector type
+        d_P = 0; % pressure drop as percentage of chamber pressure [psi]
+        spray_angle = 0; % spray angle [deg]
+
+        % impinging jets
+        if injector_type == "impinging"
+            
+        % pintle
+        elseif injector_type == "pintle"
+
+        % coaxial swirl
+        elseif injector_type == "swirl"
+
+        % coaxial shear
+        elseif injector_type == "shear"
+
+        end
+
     
     % cooling properties
-    cooling_type = "regen";  % cooling method (regen or ablative)
-    film_pct = 0;            % film cooling percent as fraction of fuel mass flow rate
-    nozzle_regen_pct = 1;    % percent of nozzle to be regeneratively cooled
+        cooling_type = "regen";  % cooling method (regen or ablative)
+        film_pct = 0;            % film cooling percent as fraction of fuel mass flow rate
+        nozzle_regen_pct = 1;    % percent of nozzle to be regeneratively cooled
 
     % fluid properties
-    vol_tank = 0;   % volume of propellant tanks [in^3]
-    p_tank = 1000;  % tank pressure [psi]
-
-    % miscellaneous
-    bar_size = 0; % bar stock diameter [in]
-
+        vol_tank = 0;   % volume of propellant tanks [in^3]
+        p_tank = 1000;  % tank pressure [psi]
+    
     % define constants
-    g = 32.174;     % gravitational constant [ft/sec^2]
+        g = 32.174;     % gravitational constant [ft/sec^2]
 
 %% Run NASA CEA
 % sends P_c, P_e, and fuel characteristics from input.xlsx as inputs
@@ -176,27 +206,31 @@ CEA_output_name = append(CEA_name_prefix, '.out');
 %% Intermediate Calculations
 
 % correct cea values & find effective exhaust velocity
-    isp = cea_isp * eff_c_star * eff_c_f;          % expected isp [sec]
-    c_star = cea_c_star * eff_c_star;              % expected c* [ft/s]
-    c = isp * g;                                   % effective exhaust velocity [ft/s]
+isp = cea_isp * eff_c_star * eff_c_f;          % expected isp [sec]
+c_star = cea_c_star * eff_c_star;              % expected c* [ft/s]
+c = isp * g;                                   % effective exhaust velocity [ft/s]
     
 % size m_dot normally
-if D_t == 0
+if sizing_method == "normal"
     m_dot = F / isp;                               % TOTAL mass flow rate [lbm/s]
     
 % size m_dot based off of throat size
-else
+elseif sizing_method == "throat"
     A_t = (D_t / 2) ^ 2 * pi;                      % throat area [in^2]
     m_dot = A_t / c_star * P_c * g;                % TOTAL mass flow rate [lbm/s]
     F = m_dot * isp;                               % thrust [lbf]
+
+% throw error for no selected sizing method
+else
+    error("No sizing method selected.")
 end
 
-    % calculate mass flow rate of fuel, oxidizer, and film cooling
-    m_dot_FUEL = m_dot / (OF + 1);                 % FUEL mass flow rate [lbm/s]
-    m_dot_OX = m_dot_FUEL * OF;                    % OX mass flow rate [lbm/s]
-    
-    m_dot_FILM = m_dot_FUEL * film_pct;            % FILM mass flow rate [lbm/s]
-    m_dot_INJ_FUEL = m_dot_FUEL * (1 - film_pct);  % regularly injected FUEL mass flow rate [lbm/s]
+% calculate mass flow rate of fuel, oxidizer, and film cooling
+m_dot_FUEL = m_dot / (OF + 1);                 % FUEL mass flow rate [lbm/s]
+m_dot_OX = m_dot_FUEL * OF;                    % OX mass flow rate [lbm/s]
+
+m_dot_FILM = m_dot_FUEL * film_pct;            % FILM mass flow rate [lbm/s]
+m_dot_INJ_FUEL = m_dot_FUEL * (1 - film_pct);  % regularly injected FUEL mass flow rate [lbm/s]
 
 % output performance information
 fprintf('\n-------- Performance Outputs --------\n')
@@ -224,18 +258,22 @@ A_e = A_t * exp_ratio;           % exit area [in^2]
 D_t = 2 * sqrt(A_t / pi);        % throat diameter [in]
 
 % size based off contraction ratio
-if con_ratio
+if converging_method == "contraction"
     A_c = A_t * con_ratio;       % chamber area [in^2]
 
 % size based off chamber diameter
-elseif D_c
+elseif converging_method == "diameter"
     A_c = pi * (D_c / 2) ^ 2;    % chamber area [in^2]
     con_ratio = A_c / A_t;       % contraction ratio
 
-% if no contraction ratio or chamber diameter is assigned
-else
+% size based off a calculated contraction ratio
+elseif converging_method == "auto"
     con_ratio = 8 * (2 * sqrt(A_t / pi)) ^ -.6 + 1.25;  % contraction ratio (I forget where I got this equation from, please don't kill me)
     A_c = A_t * con_ratio;                              % chamber area [in^2]
+
+% throw an error if no converging method is selected
+else
+    error("No converging method selected.")
 end
 
 D_e = 2 * sqrt(A_e / pi); % exit diameter [in]
@@ -260,6 +298,10 @@ if sizeCooling
     % size ablative cooling
     elseif cooling_type == "ablative"
         %[] = sizeAblative(x_contour, y_contour);
+
+    % analyze heat sink
+    elseif cooling_type == "heat sink"
+        %[] = sizeHeatSink(x_contour, y_contour);
     end 
 end
 
@@ -268,6 +310,10 @@ if sizeInjector
     % size coaxial swirler
     if injector_type == "swirl"
         %[] = sizeCoaxSwirl();
+
+    % size coaxial shear
+    elseif injector_type == "shear"
+        %[] = sizeCoaxShear();
 
     % size pintle
     elseif injector_type == "pintle"
@@ -283,8 +329,8 @@ end
 % calculate required mass of propellants
 if sizeFluids
 
-%     oxidizer_density = refpropm('D', 'T', oxidizer_temp, 'P', P_c * u.PSI2KPA, oxidizer_REFPROP) * u.KGM32LBIN3; % [lb/in^3]
-%     fuel_density = refpropm('D', 'T', fuel_temp, 'P', P_c * u.PSI2KPA, 'ethanol') * u.KGM32LBIN3; % [lb/in^3]
+    oxidizer_density = refpropm('D', 'T', oxidizer_temp, 'P', P_c * u.PSI2MPA, oxidizer_REFPROP) * u.KGM32LBIN3; % [lb/in^3]
+    fuel_density = refpropm('D', 'T', fuel_temp, 'P', P_c * u.PSI2MPA, fuel_REFPROP) * u.KGM32LBIN3; % [lb/in^3]
 
     % size fluid system based off of tank size
     if vol_tank

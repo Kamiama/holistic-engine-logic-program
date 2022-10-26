@@ -1,4 +1,4 @@
-%% Engine Sizing Code CEA Wrapper
+%% HELP CEA Wrapper
 % Author: Kamon Blong (kblong@purdue.edu)
 % First Created: 7/17/2022
 % Last Updated: 
