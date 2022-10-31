@@ -7,5 +7,5 @@ This is an open source MATLAB program that interfaces with NASA CEA to size most
 3. Your program outputs will be outputed into the /output folder.
 
 ## Support
-If you need any further help, email kamon.blong@gmail.com
+If you need any further help or would like to be added as a collaborator, email kamon.blong@gmail.com
 
