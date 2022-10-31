@@ -1,5 +1,5 @@
 # Holistic Engine Logic Program
-Welcome to HELP! (Holistic Engine Logic Program), where "help" represents the anguished cries of a struggling engineer. This is an open source MATLAB program that interfaces with NASA CEA to size most aspects of engine design.
+Welcome to HELP! (Holistic Engine Logic Program), where "help" represents the anguished final cry of a struggling engineer before he or she disappears beneath the waves of an unholy ammount of STEM coursework. This is an open source MATLAB program that interfaces with NASA CEA to size most aspects of engine design.
 
 ## Operation
 1. Using the imperial or metric examples in /input, create a input excel file with your given run parameters.
