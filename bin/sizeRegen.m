@@ -1,7 +1,7 @@
-%% Regenerative Cooling Sizing Code
-% Author: Kamon Blong (kblong@purdue.edu)
+%% HELP Regenerative Cooling Sizing Code
+% Author: Kamon Blong (kamon.blong@gmail.com)
 % First Created: 10/23/2022
-% Last Updated: 
+% Last Updated: 10/23/2022
 
 function [] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct)
 

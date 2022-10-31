@@ -1,7 +1,8 @@
-%% Unit Conversions Function
+%% HELP Unit Conversions Function
 % Author: Liam Schenk
+% Collaborators: Kamon Blong
 % First Created: 7/10/2022
-% Last Updated: 10/26/2022 by Kamon Blong
+% Last Updated: 10/26/2022
 
 function u = convertUnits()
 

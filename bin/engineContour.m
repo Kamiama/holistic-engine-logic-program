@@ -1,7 +1,8 @@
 %% HELP Engine Contour Generator
-% Author: Kamon Blong (kblong@purdue.edu)
+% Author: Kamon Blong (kamon.blong@gmail.com)
+% Collaborators: Andrej Damjanov, Chris Bermack, Jackson Ferry-Zamora
 % First Created: 7/17/2022
-% Last Updated: 
+% Last Updated: 10/23/2022
 
 function [x_total, r_total, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size)
 
@@ -15,7 +16,7 @@ Outputs:
 - 
 %}
 
-% interpolate initial and exit rao angles - Chris Bermack
+% interpolate initial and exit rao angles
 [theta_i, theta_e] = raoAngleInterpolation(exp_ratio); 
 
 % set conical half angle
@@ -72,7 +73,12 @@ if geometry_type == "conical" || geometry_type == "bell"
     % calculate chamber volume & length
     vol_chamber = L_star * A_t;                                                                    % volume of entire chamber [in^3]
     L_converging = -min(x_throat);                                                                 % length of converging section [in]
-    vol_converging = pi * trapz(fliplr((double(x_throat)) .^ 2), fliplr((double(y_throat)) .^ 2)); % volume of converging section [in^3] (NEEDS FIXED)
+
+    vol_converging_chamber = pi * trapz(fliplr((double(x_converging_chamber)) .^ 2), fliplr((double(y_converging_chamber)) .^ 2));
+    vol_converging_linear = pi / 3 * (max(x_converging_linear) - min(x_converging_linear)) * (R_c ^ 2 + R_c*R_t + R_t ^ 2);
+    vol_converging_throat = pi * trapz(fliplr((double(x_converging_throat)) .^ 2), fliplr((double(y_converging_throat)) .^ 2));
+    
+    vol_converging = vol_converging_chamber + vol_converging_linear + vol_converging_throat;       % volume of converging section [in^3]
     vol_cylindrical = vol_chamber - vol_converging;                                                % volume of cylindrical section [in^3]
     L_c = vol_cylindrical / (pi * R_c ^ 2);                                                        % chamber length [in]
     
@@ -97,7 +103,7 @@ elseif geometry_type == "crude"
     % calculate chamber volume & length
     vol_chamber = L_star * A_t; % volume of entire chamber [in^3]
     L_converging = -min(x_converging_linear); % length of converging section [in]
-    vol_converging = pi / 3 * -min(x_converging_linear) * (R_c ^ 2 + R_c + R_t ^ 2 + R_t); % volume of converging section [in^3]
+    vol_converging = pi / 3 * -min(x_converging_linear) * (R_c ^ 2 + R_c * R_t + R_t ^ 2); % volume of converging section [in^3]
     vol_cylindrical = vol_chamber - vol_converging; % volume of cylindrical section [in^3]
     L_c = vol_cylindrical / (pi * R_c ^ 2); % chamber length [in]
     
@@ -119,8 +125,7 @@ elseif geometry_type == "bell"
     L_nozzle = bell_pct / 100 * L_nozzle; % truncate nozzle length for bell contour
     
     % bell section - generate a bezier curve (http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf)
-    % bezier curve code adapted from original by Tyler Grimsich and Andrej Damjanov
-    
+        
     % calculate N, E, and Q coordinates for bezier curve equation
     x_N = 0.382 * R_t * cos(theta_i - pi / 2);
     y_N = 0.382 * R_t * sin(theta_i - pi / 2) + 0.382 * R_t + R_t;
@@ -159,7 +164,7 @@ unique_index_sorted = sortrows(unique_index);
 x_total = x_total(unique_index_sorted);
 r_total = r_total(unique_index_sorted);
 
-% send to .txt file for solidworks export (courtesy of Tyler and Andrej <3)
+% send to .txt file for solidworks export
 dlmwrite('nozzle_contour.txt', [x_total.', r_total.', zeros(length(x_total), 1)], 'delimiter', '\t', 'precision', 5);
 
 % find total length of engine from injector plate to end of nozzle

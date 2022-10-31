@@ -65,19 +65,18 @@ if geometry_type == "conical" || geometry_type == "bell"
     x_converging_linear = [max(x_converging_chamber), min(x_converging_throat)];
     y_converging_linear = [min(y_converging_chamber), max(y_converging_throat)];
     
-    % combine throat contour into one geometry
-    x_throat = [x_converging_chamber, x_converging_linear, x_converging_throat];
-    y_throat = [y_converging_chamber, y_converging_linear, y_converging_throat];
-    
     % calculate chamber volume & length
     vol_chamber = L_star * A_t;                                                                    % volume of entire chamber [in^3]
-    L_converging = -min(x_throat);                                                                 % length of converging section [in]
-    vol_converging = pi * trapz(fliplr((double(x_throat)) .^ 2), fliplr((double(y_throat)) .^ 2)); % volume of converging section [in^3] (NEEDS FIXED)
+    L_converging = -min(x_converging_chamber);                                                     % length of converging section [in]
+    vol_converging_chamber = pi * trapz(fliplr((double(x_converging_chamber)) .^ 2), fliplr((double(y_converging_chamber)) .^ 2));
+    vol_converging_linear = pi / 3 * (max(x_converging_linear) - min(x_converging_linear)) * (R_c ^ 2 + R_c*R_t + R_t ^ 2);
+    vol_converging_throat = pi * trapz(fliplr((double(x_converging_throat)) .^ 2), fliplr((double(y_converging_throat)) .^ 2));
+    vol_converging = vol_converging_chamber + vol_converging_linear + vol_converging_throat;       % volume of converging section [in^3]
     vol_cylindrical = vol_chamber - vol_converging;                                                % volume of cylindrical section [in^3]
     L_c = vol_cylindrical / (pi * R_c ^ 2);                                                        % chamber length [in]
     
     % straight chamber section - generate a line between injector face and chamber converging arc
-    x_chamber = [min(x_throat) - L_c, min(x_throat)];
+    x_chamber = [min(x_converging_chamber) - L_c, min(x_converging_chamber)];
     y_chamber = [R_c, R_c];
 
 % generate curve for crude conical geometry
@@ -135,12 +134,9 @@ elseif geometry_type == "bell"
     x_Q = (c2 - c1) / (m1 - m2);
     y_Q = (m1 * c2 - m2 * c1) / (m1 - m2);
 
-    x_Q = 1;
-    y_Q = 1;
-    
     % solve bezier curve for nozzle contour
     nozzle_pos = linspace(0, 1); % nozzle section made up of 100 points
-    x_nozzle = (1 - nozzle_pos) .^ 2 .* x_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* x_Q( + nozzle_pos .^ 2 .* x_E;
+    x_nozzle = (1 - nozzle_pos) .^ 2 .* x_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* x_Q + nozzle_pos .^ 2 .* x_E;
     y_nozzle = (1 - nozzle_pos) .^ 2 .* y_N + 2 .* (1 - nozzle_pos) .* nozzle_pos .* y_Q + nozzle_pos .^ 2 .* y_E;
 
 % generate curve for crude conical geometry

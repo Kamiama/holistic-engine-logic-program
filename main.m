@@ -1,8 +1,11 @@
 %% Holistic Engine Logic Program (HELP)
-% Author: Kamon Blong (kblong@purdue.edu)
+% Author: Kamon Blong (kamon.blong@gmail.com)
 % First Created: 7/10/2022
 % Last Updated: 
 %{ 
+
+Description: 
+
 Assumptions: Currently assumes a stationary test engine with no regard for
 changes in gravity or atmospheric pressure. Additionally assumes an
 ideal rocket engine (perfect propellant mixing, gaseous flow, perfect gas
@@ -10,7 +13,7 @@ law, adiabatic, neglects friction and boundry layer effects, no
 discontinuities, steady mDot, no transience, all exhaust contributes to
 thrust, characteristics are uniform at any point along an axial slice of
 the engine, and chemical equilibrium is constant axially throughout the engine 
-(Sutton 46)). Without tinputing a specific inlet temperature for
+(Sutton 46)). Without inputing a specific inlet temperature for
 propellants, NASA CEA (and therefore this program) also assumes that
 ordinary propellants are stored at room temperature and cryogens at their
 boiling point.
