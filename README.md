@@ -3,6 +3,8 @@ Welcome to HELP! (Holistic Engine Logic Program), where "help" represents the an
 
 This is an open source MATLAB program that interfaces with NASA CEA to size and analyze most aspects of liquid rocket engine design. Specific features include (some to a limited extent or still WIP): engine geometry, contour export to CAD, injector sizing, regenerative cooling channel sizing, thermal analysis, structural analysis, fluid feed system sizing.
 
+![image](https://user-images.githubusercontent.com/24968256/199154329-5501d4da-2fab-47af-bade-da9d5188470c.png)
+
 ## Operation
 1. Using the imperial or metric examples in /input, create a input excel file with your given run parameters.
 2. Run main.m in the main directory.
