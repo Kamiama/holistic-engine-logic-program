@@ -114,7 +114,7 @@ numchannels = pi * (engine_diameter + 0.8 * (Dstar + 2 * wallthick)) / (Dstar + 
 mdotchan = mdotf / numchannels; %Mass flow of channel (EQ 6.31)
 %Step 3: Begin Stepping Down tube/channel
 for i = [1:stepsize]
-    [~, ~, ~, ~, gamma, P, T, density, mu, Pr_gas, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
+    [~, ~, ~, ~, gamma, P, T, density, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
 
 
     Pr_gas = densityfs * viscosityfs * D;
