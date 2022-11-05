@@ -118,7 +118,7 @@ for i = [1:stepsize]
     [~, ~, ~, ~, gamma, P, T_gas, density, gas_mu, Pr_gas, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
     r = Pr ^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
     T_r = T_gas * (1 + r * (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M ^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
-    liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35));
+    liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
     Pr_liquid = liq_mu * Cp / kc;
     while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
         %Step 5: Calculate Gas film coefficient and heat transfer 
