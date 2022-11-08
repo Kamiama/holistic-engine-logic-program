@@ -3,7 +3,7 @@
 % First Created: 10/23/2022
 % Last Updated: 10/23/2022
 
-function [] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct)
+function [] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct, mdotf)
 
 %{ 
 Description: Currently sizes a single-pass regen system that injects fuel at a 
@@ -14,7 +14,11 @@ Description: Currently sizes a single-pass regen system that injects fuel at a
     with a slitter-saw CNC attatchment or via powder bed 3D printing.
 
 Inputs:
-- 
+- x_contour: 
+- y_contour:
+- R_t: Throat Radius
+- nozzle_regen_pct: 
+- mdotf: Mass flow rate of fuel/coolant (lb/s)
 
 Outputs: 
 - 
@@ -82,14 +86,15 @@ liqheatransfer = 0;
 
 %Geometric
 wallthick = 100; %Wall Thickness
-d = 5; %?????? d in num channel equation
 engine_diameter = 10; %????? In num channel equation
 Alocal = []; %Local Cross Sectional Areas of Engine
-A_t = 10;  %Area at throat
+A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
 dlocal = [];  %Local Cross Sections of Channels
+characteristic_length = 10; %Longest length of Channels 
 
-Dstar = %Diameter at Nozzle Throat
-characteristic_length = 10 %Longest length of Channels 
+A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
+Dstar = R_t * 2; %Diameter at Nozzle Throat
+Alocal = pi() * (R_t)^2; %Local Cross Sectional Areas of Engine
 
 
 %Coolant properties
@@ -116,8 +121,8 @@ mdotchan = mdotf / numchannels; %Mass flow of channel (EQ 6.31)
 %Step 3: Begin Stepping Down tube/channel
 for i = [1:stepsize]
     [~, ~, ~, ~, gamma, P, T_gas, density, gas_mu, Pr_gas, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
-    r = Pr ^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
-    T_r = T_gas * (1 + r * (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M ^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
+    r = Pr_gas ^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
+    T_r = T_gas(i) * (1 + r * (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M ^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
     liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
     Pr_liquid = liq_mu * Cp / kc;
     while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
@@ -143,3 +148,4 @@ for i = [1:stepsize]
     end
     Tl(i + 1) = T(i) + 1 / (mdotchan * Cp);
     Pl(i + 1) = Pl(i) - cf(i) * (chan_height / chan_diam) * 2 * liq_density * liq_velocity; 
+end
