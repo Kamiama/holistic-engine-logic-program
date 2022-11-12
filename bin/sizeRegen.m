@@ -95,7 +95,7 @@ Alocal = []; %Local Cross Sectional Areas of Engine
 A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
 dlocal = [];  %Local Cross Sections of Channels
 characteristic_length = 10; %Longest length of Channels 
-
+chamber_length =;
 A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
 Dstar = R_t * 2; %Diameter at Nozzle Throat
 Alocal = pi() * (R_t)^2; %Local Cross Sectional Areas of Engine
@@ -154,8 +154,8 @@ for i = [1:stepsize]
         %Step 9: Run loop until step 5/8 get same value for heat flux
     end
     %Step 10: Obtain new liquid temperature/pressure
-    Tl(i + 1) = T(i) + 1 / (mdotchan * Cp)* gasheattransfer * wall_length/stepnum;  %Heister Eq. 6.39 (pg 212) wall_length/stepnum term needs to be fixed
-    Pl(i + 1) = Pl(i) - cf(i) * (chan_height / chan_diam) * 2 * liq_density * liq_velocity; %Channel Height???
+    Tl(i + 1) = T(i) + 1 / (mdotchan * Cp)* gasheattransfer * chamber_length/stepnum * engine_diameter/numchannels;  %Heister Eq. 6.39 (pg 212) wall_length/stepnum term needs to be fixed
+    Pl(i + 1) = Pl(i) - cf(i) * (chamber_length / (stepnum *chan_diam)) * 2 * liq_density * liq_velocity^2; %Channel Height???
 
     %Step 12: Structural Analysis Checks
     St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
