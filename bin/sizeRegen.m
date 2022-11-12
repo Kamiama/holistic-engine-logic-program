@@ -145,7 +145,7 @@ for i = [1:stepsize]
         hl = (a * Re_liquid^m * Pr_liquid^n * (visfree / viscwall)^b) * k / L;    %Liquid Film Coefficient (EQ 6.19) 
 
         %Step 8: Compute Heat Flux. Compare it to step 5
-        liqheatransfer = hl * (Tl(i) - Twl(i)); %Liquid Heat Transfer (EQ  6.29)
+        liqheatransfer = hl * (Twl(i) - Tl(i)); %Liquid Heat Transfer (EQ  6.29)
 
         %Step 4: Guess Gass Wall Temperature
 
@@ -158,12 +158,10 @@ for i = [1:stepsize]
     Pl(i + 1) = Pl(i) - cf(i) * (chan_height / chan_diam) * 2 * liq_density * liq_velocity; %Channel Height???
 
     %Step 12: Structural Analysis Checks
-    %Combined tangentail stresses: Huzel and Huang (1992) Eq 4-27 page 92
-    St = ((Pl- P_gas)*tube_radius)/wallthick + ...
-        (E*a*gasheattransfer*wallthick)/(2*(1-v)kw) + ...
-        6*Ma/(wallthick^2);
+    St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
     Sl = E*a*(Twl-Tl); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.
-    Sc = 4*Et*Ec*wallthick/((((Et)^(1/2))*((Ec)^(1/2))^2)*(3*(1-v^2)*tube_radius)); %Critical Stress Buckling (Huzel and Huang, Eq 4-29, og 93)
+    Sc = 4*Et*Ec*wallthick/((((Et)^(1/2))*((Ec)^(1/2))^2)*(3*(1-v^2)*tube_radius)); %Critical Stress Buckling (Huzel and Huang, Eq 4-29, pg 93)
+
 
 
 
