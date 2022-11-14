@@ -5,9 +5,13 @@ This is an open source MATLAB program that interfaces with NASA CEA to size and 
 
 ![image](https://user-images.githubusercontent.com/24968256/199154329-5501d4da-2fab-47af-bade-da9d5188470c.png)
 
+![750 lbf regen](https://user-images.githubusercontent.com/24968256/201764015-f81a08c4-ce96-4222-85fe-85c37f19cd4a.png)
+
+![750 lbf regen 2](https://user-images.githubusercontent.com/24968256/201764028-78e5458a-d8ce-4005-8347-28a7fe914668.PNG)
+
 ## Operation
 1. Using the imperial or metric examples in /input, create a input excel file with your given run parameters.
-2. Run main.m in the main directory.
+2. Run main.m in the main directory after changing line 27 to your input file name.
 3. Your program outputs will be outputed into the /output folder. (currently just outputs to console)
 
 ## Dependencies
