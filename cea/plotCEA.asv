@@ -15,20 +15,20 @@ file_name = 'plotcea';
 
 %% Assign Inputs
 P_c = 300;            % chamber pressure [psi]
-P_e = 5;           % exit pressure [psi]
+P_e = 14.7;           % exit pressure [psi]
 fuel = {'C3H8O,1propanol'};  % fuel formula for NASA CEA
 fuel_temp = 293.15;   % fuel temperature [K]
 fuel_weight = 0;      % fuel weights, does nothing now
 oxidizer = {'O2(L)'}; % oxidizer formula for NASA CEA
-OF = 1.5;
+OF = 1.6;
 
-iterating_value = "P_c";
+iterating_value = "OF";
 min_value_OF = 1.1;
-max_value_OF = 1.9;
+max_value_OF = 2.;
 step_value_OF = .02;
 
-min_value_P_c = 100;
-max_value_P_c = 1000;
+min_value_P_c = 150;
+max_value_P_c = 500;
 step_value_P_c = 5;
 
 %% Iterate Over CEA Values

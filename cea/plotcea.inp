@@ -1,9 +1,9 @@
 problem rocket eq
-    p(psi) = 300
+    p(psi) = 1000
     o/f = 1.5
-    pip = 20.4082
+    pip = 200
 reac
-    fuel = Jet-A(L)
+    fuel = C3H8O,1propanol t(K) = 293.150
     ox = O2(L)
 outp trans
 end

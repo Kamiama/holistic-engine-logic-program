@@ -17,7 +17,7 @@ Outputs:
 %}
 
 % interpolate initial and exit rao angles
-[theta_i, theta_e] = raoAngleInterpolation(exp_ratio); 
+%[theta_i, theta_e] = raoAngleInterpolation(exp_ratio); 
 
 % set conical half angle
 if geometry_type == "conical"
@@ -26,7 +26,7 @@ end
 
 % convert angle inputs to radians
 theta_i = theta_i * pi / 180;          % nozzle expansion (initial) angle [rad]
-theta_e = theta_e * pi / 180;          % nozzle exit angle [rad] 
+%theta_e = theta_e * pi / 180;          % nozzle exit angle [rad] 
 conv_angle = conv_angle * pi /180;     % convergence angle [rad]
 
 % set default converging/diverging fillets (do not change unless you know what you're doing)
@@ -60,15 +60,15 @@ if geometry_type == "conical" || geometry_type == "bell"
     % this part isn't very important for performance, any decisions here should be made based off of size constraints
     nozzle_pos = linspace(pi / 2, pi / 2 + conv_angle); % arc angle is between convergence angle and -pi/2
     y_converging_chamber = R_chamber_fillet * R_t * sin(nozzle_pos) - R_chamber_fillet * R_t + R_c;
-    x_converging_chamber = -(R_chamber_fillet * R_t * cos(nozzle_pos)) - (min(y_converging_chamber) - max(y_converging_throat)) / tan(conv_angle) + min(x_converging_throat) + R_chamber_fillet * R_t * cos(pi / 2 + conv_angle);
+     x_converging_chamber = -(R_chamber_fillet * R_t * cos(nozzle_pos)) - (min(y_converging_chamber) - max(y_converging_throat)) / tan(conv_angle) + min(x_converging_throat) + R_chamber_fillet * R_t * cos(pi / 2 + conv_angle);
     
     % linear converging section - generate a line between the end points of the chamber and throat converging sections
     x_converging_linear = [max(x_converging_chamber), min(x_converging_throat)];
     y_converging_linear = [min(y_converging_chamber), max(y_converging_throat)];
     
     % combine throat contour into one geometry
-    x_throat = [x_converging_chamber, x_converging_linear, x_converging_throat, x_diverging];
-    y_throat = [y_converging_chamber, y_converging_linear, y_converging_throat, y_diverging];
+    x_throat = [x_converging_chamber, x_converging_linear, x_converging_throat];
+    y_throat = [y_converging_chamber, y_converging_linear, y_converging_throat];
     
     % calculate chamber volume & length
     vol_chamber = L_star * A_t;                                                                    % volume of entire chamber [in^3]
@@ -155,9 +155,6 @@ end
 %% Combine nozzle and chamber contour and output results
 
 % combine all parts
-% x_total = [x_chamber, x_throat, x_nozzle];
-% r_total = [y_chamber, y_throat, y_nozzle];
-
 x_total = [x_chamber, x_throat, x_nozzle];
 r_total = [y_chamber, y_throat, y_nozzle];
 
@@ -193,7 +190,7 @@ disp(['                   Expansion Ratio: ' num2str(exp_ratio)]);
 disp(['                 Contraction Ratio: ' num2str(con_ratio)]);
 disp(['           Convergence Angle (deg): ' num2str(conv_angle*180/pi)]);
 disp(['                     Theta i (deg): ' num2str(theta_i*180/pi)]);
-disp(['                     Theta e (deg): ' num2str(theta_e*180/pi)]);
+%disp(['                     Theta e (deg): ' num2str(theta_e*180/pi)]);
 fprintf('---------- Contour Outputs ----------\n')
 
 %% Display Results

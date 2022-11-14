@@ -113,6 +113,7 @@ if convert_to_imperial
     c_star = c_star(1) * 3.281; % convert [m/s] to [ft/s]
     T = T .* 1.8; % convert [K] to [R]
     rho = rho * 3.613E-5; % convert [kg/m^3] to [lbm/in^3]
+    
     mu = mu * 1.450E-4; % convert [Pa-s] to [psi-s]
     Mw = Mw * 2.205; % convert [kg/kmol] to [lbm/kmol]
     k = k * 0.5782; % convert [W/m-K] to [Btu/hr-ft-R]

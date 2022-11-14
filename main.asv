@@ -24,7 +24,7 @@ clc;
 
 %% Import Data
 % import input properties
-input_data = 'regen.xlsx';
+input_data = '250lbf.xlsx';
 
 %% Identify OS & Generate Paths 
 % identify OS
@@ -57,7 +57,6 @@ file_name = strcat(run_description, write_date); % output file name
 %% Program Run Definition
 % parse input run properties
     sizeEngine = 1;
-    sizeStructures = 1;
     enableREFPROP = 1;
     enableFigures = 1;
     enableDebug = 1;
@@ -278,11 +277,6 @@ elseif converging_method == "auto"
     con_ratio = 8 * (2 * sqrt(A_t / pi)) ^ -.6 + 1.25;  % contraction ratio (I forget where I got this equation from, please don't kill me)
     A_c = A_t * con_ratio;                              % chamber area [in^2]
 
-% size based off a calculated contraction ratio
-elseif converging_method == "exit"
-    A_c = A_e;                    % chamber area [in^2]
-    con_ratio = exp_ratio;        % contraction ratio                              
-
 % throw an error if no converging method is selected
 else
     error("No converging method selected.")
@@ -393,14 +387,13 @@ if sizeFluids
 
 end
 
-%% Structural Sizing
 if sizeStructures
 
-    face_force = P_c * A_c; % injector face bolt force due to chamber pressure [lbf]
+    bolt_force = P_c * A_c; % injector face bolt force [lbf]
 
     % output fluid system information
     fprintf('\n--------- Structures Outputs --------\n')
-    disp(['      Force on Injector Face (lbf): ' num2str(face_force)]);
+    disp(['                  Bolt Force (lbf): ' num2str(oxidizer_mass)]);
     fprintf('--------- Structures Outputs --------\n')
 
 end
