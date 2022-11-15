@@ -147,9 +147,9 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
         [~, ~, ~, ~, gamma, P_gas, T_gas, density, mu_gas, Pr_gas, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
         r = Pr_gas ^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
         T_r = T_gas * (1 + r * (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M ^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
-        liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
+        %liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
         Pr_liquid = liq_mu * Cp / kc;
-        while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
+        while liqheattransfer ~= gasheattransfer
             %Step 5: Calculate Gas film coefficient and heat transfer 
             sigma = (.5 * T_wg / T_c * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor (Huzel & Huang 86).
             h_g = (.026 / D_t ^ .2) * (mu ^ .2 * cp / Pr ^ .6) * (P_c * g / c_star) ^ .8 * (D_t / radius_throat) ^ .1 * (A_t / A_t) ^ .9 * sigma; % film coefficient - bartz equation (Huzel & Huang 86).
