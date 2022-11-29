@@ -64,7 +64,7 @@ function [] = sizeRegen(x_contour, r_contour, R_t, nozzle_regen_pct, mdotf, P_c,
         A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
         dlocal = [];  %Local Cross Sections of Channels
         characteristic_length = 10; %Longest length of Channels 
-        chamber_length =;
+        chamber_length = 7; %in
         A_t =  m_dot * c_star / P_c / g;    % throat area [in^2]
         D_t = R_t * 2; % diameter at nozzle throat [in]
         A_local = pi() * (R_t)^2; % local cross sectional areas of engine
@@ -74,13 +74,13 @@ function [] = sizeRegen(x_contour, r_contour, R_t, nozzle_regen_pct, mdotf, P_c,
         liq_mu = 10; %Viscosity
         Cp = 100; %Specific heat at constant pressure
         k_fluid = 100; %Thermal Conductivity of Coolant
-        Tl = 293;
+        fuel_temp = 293;
+        fuel_pressure = 210;
+        fuel = 'Jet-A(L)';
     
     % engine properties
-        Pi = 20; %Inflow Pressure
-        Ti = 200; %Inflow Temp
         Tgas = []; %Gas temperature from 1-D 
-        mdotf = 30; %Coolant/fuel mass flow
+        mdotf = 1; %Coolant/fuel mass flow lb/s
         chamber_pressure = 100; %Chamber Pressure
         Cstar = 1000; %Characteristic Velocity
         throat_radius_curvature = 10; %Throat radius Curvature
@@ -152,11 +152,11 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
     T_r = T_gas .* (1 + r .* (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M .^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
    
     %Coolant Conditions
-    Pl = [Pi, zeros(1,301)]; %liquid Pressure
-    Tl = [Ti, zeros(1,301)]; %liquid Pressure 
+    fuel_pressure = [fuel_pressure, zeros(1,301)]; %liquid Pressure
+    fuel_temp = [fuel_temp, zeros(1,301)]; %liquid Temperature 
     %Ref Prop
     for i = [1:stepsize]
-        liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * Pl(i) -0.0542 * Pl(i) ^2) / (Tl(i) - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
+        liq_mu = exp(3.402 + 0.0132 * fuel_pressure(i) + (957.3 + 3.090 * fuel_pressure(i) -0.0542 * fuel_pressure(i) ^2) / (fuel_temp(i) - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
         Pr_liquid = liq_mu * Cp / kc;
         while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
             %Step 5: Calculate Gas film coefficient and heat transfer 
@@ -171,7 +171,7 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
             hl = (a * Re_liquid^m * Pr_liquid^n * (visfree / viscwall)^b) * k / L;    %Liquid Film Coefficient (EQ 6.19) 
     
             %Step 8: Compute Heat Flux. Compare it to step 5
-            liqheatransfer = hl * (Twl(i) - Tl(i)); %Liquid Heat Transfer (EQ  6.29)
+            liqheatransfer = hl * (Twl(i) - fuel_temp(i)); %Liquid Heat Transfer (EQ  6.29)
     
             %Step 4: Guess Gass Wall Temperature
     
@@ -180,12 +180,12 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
             %Step 9: Run loop until step 5/8 get same value for heat flux
         end
         %Step 10: Obtain new liquid temperature/pressure
-        Tl(i + 1) = T(i) + 1 / (mdotchan * Cp)* gasheattransfer * chamber_length/stepnum * D_c/numchannels;  %Heister Eq. 6.39 (pg 212) wall_length/stepnum term needs to be fixed % IS IT D_C OR D_T
-        Pl(i + 1) = Pl(i) - cf(i) * (chamber_length / (stepnum *chan_diam)) * 2 * liq_density * liq_velocity^2; %Channel Height???
+        fuel_temp(i + 1) = T(i) + 1 / (mdotchan * Cp)* gasheattransfer * chamber_length/stepnum * D_c/numchannels;  %Heister Eq. 6.39 (pg 212) wall_length/stepnum term needs to be fixed % IS IT D_C OR D_T
+        fuel_pressure(i + 1) = fuel_pressure(i) - cf(i) * (chamber_length / (stepnum *chan_diam)) * 2 * liq_density * liq_velocity^2; %Channel Height???
     
         %Step 12: Structural Analysis Checks
         St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
-        Sl = E*a*(Twl-Tl); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.
+        Sl = E*a*(Twl-fuel_temp); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.
         Sc = 4*Et*Ec*t_w/((((Et)^(1/2))*((Ec)^(1/2))^2)*(3*(1-v^2)*tube_radius)); %Critical Stress Buckling (Huzel and Huang, Eq 4-29, pg 93)
 
 
