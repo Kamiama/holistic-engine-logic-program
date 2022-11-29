@@ -1,9 +1,9 @@
-%% HELP Regenerative Cooling Sizing Code
+    %% HELP Regenerative Cooling Sizing Code
 % Authors: Kamon Blong (kamon.blong@gmail.com), Jan Ayala, Andrew Radulovich
 % First Created: 10/23/2022
 % Last Updated: 11/14/2022
 
-function [] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct, mdotf, P_c, P_e, Oxidizer, Fuel, OF_ratio, wall_material)
+function [] = sizeRegen(x_contour, r_contour, R_t, nozzle_regen_pct, mdotf, P_c, P_e, Oxidizer, Fuel, OF_ratio, wall_material)
    %{ 
     Description:
     This program sets fluid and material inputs and then iterates starting from a
@@ -139,19 +139,28 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
     
     
     
-    %Step 2: Calculate Number of channels and channel mass flow rate
+    %% Step 2: Calculate Number of channels and channel mass flow rate
     numchannels = pi * (D_t + 0.8 * (D_t + 2 * t_w)) / (D_t + 2 * t_w); %Number of Channels (EQ 6.30) (Change the coefficient later)
     mdotchan = mdotf / numchannels; %Mass flow of channel (EQ 6.31)
-    %Step 3: Begin Stepping Down tube/channel
+    %% Step 3: Begin Stepping Down tube/channel
+    %Property Initializations
+
+    %Chamber Conditions
+    [~, ~, ~, ~, gamma, P_gas, T_gas, density, mu_gas, Pr_gas, Mw, k, son, cp] ...
+        = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
+    r = Pr_gas .^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
+    T_r = T_gas .* (1 + r .* (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M .^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
+   
+    %Coolant Conditions
+    Pl = [Pi, zeros(1,301)]; %liquid Pressure
+    Tl = [Ti, zeros(1,301)]; %liquid Pressure 
+    %Ref Prop
     for i = [1:stepsize]
-        [~, ~, ~, ~, gamma, P_gas, T_gas, density, mu_gas, Pr_gas, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
-        r = Pr_gas ^ (1 / 3); % recovery factor - biased towards larger engines, very small engines should use Pr^.5 (Heister 196).
-        T_r = T_gas * (1 + r * (gamma - 1) / 2 * M ^ 2) / (1 * (gamma - 1) / 2 * M ^ 2); % recovery temp (adiabatic wall temp) - corrects for compressible boundry layers (Huzel & Huang 85).
-        %liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * liq_pressure -0.0542 *liq_pressure ^2) / (Tl - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
+        liq_mu = exp(3.402 + 0.0132 * Pl(i) + (957.3 + 3.090 * Pl(i) -0.0542 * Pl(i) ^2) / (Tl(i) - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
         Pr_liquid = liq_mu * Cp / kc;
-        while liqheattransfer ~= gasheattransfer
+        while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
             %Step 5: Calculate Gas film coefficient and heat transfer 
-            sigma = (.5 * T_wg / T_c * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor (Huzel & Huang 86).
+            sigma = (.5 * T_wg / T_c * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor (Huzel & Huang 86).
             h_g = (.026 / D_t ^ .2) * (mu ^ .2 * cp / Pr ^ .6) * (P_c * g / c_star) ^ .8 * (D_t / radius_throat) ^ .1 * (A_t / A_t) ^ .9 * sigma; % film coefficient - bartz equation (Huzel & Huang 86).
             gasheattransfer = h_g * (T_r - Twgi);  %Gas Heat Transfer (EQ 6.16)
     
