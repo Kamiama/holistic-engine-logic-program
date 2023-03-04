@@ -1,4 +1,4 @@
-    %% HELP Regenerative Cooling Sizing Code
+%% HELP Regenerative Cooling Sizing Code
 % Authors: Kamon Blong (kamon.blong@gmail.com), Jan Ayala, Andrew Radulovich
 % First Created: 10/23/2022
 % Last Updated: 11/14/2022
@@ -159,7 +159,7 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
         liq_mu = exp(3.402 + 0.0132 * fuel_pressure(i) + (957.3 + 3.090 * fuel_pressure(i) -0.0542 * fuel_pressure(i) ^2) / (fuel_temp(i) - 57.35)); % J. Chem. Eng. Data 2022, 67, 9, 2242–2256
         Pr_liquid = liq_mu * Cp / kc;
         while liqheattransfer < gasheattransfer * upperbound || liqheattransfer > gasheattransfer * lowerbound
-            %Step 5: Calculate Gas film coefficient and heat transfer 
+            % step 5: calculate gas film coefficient and heat transfer 
             sigma = (.5 * T_wg / T_c * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor (Huzel & Huang 86).
             h_g = (.026 / D_t ^ .2) * (mu ^ .2 * cp / Pr ^ .6) * (P_c * g / c_star) ^ .8 * (D_t / radius_throat) ^ .1 * (A_t / A_t) ^ .9 * sigma; % film coefficient - bartz equation (Huzel & Huang 86).
             gasheattransfer = h_g * (T_r - Twgi);  %Gas Heat Transfer (EQ 6.16)

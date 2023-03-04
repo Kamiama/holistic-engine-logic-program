@@ -24,7 +24,7 @@ clc;
 
 %% Import Data
 % import input properties
-input_data = ['lander_engine.xlsx'];
+input_data = ['igniter'.xlsx'];
 
 %% Identify OS & Generate Paths 
 % identify OS
@@ -110,7 +110,7 @@ file_name = strcat(run_description, write_date); % output file name
         elseif fuel(1) == "H2"
             fuel_REFPROP = 'hydrogen';
             fuel_temp = 293.15;
-        elseif fuel(1) == "C3H8O,2propanol"
+        elseif fuel(1) == "C3H8O,1propanol"
             fuel_REFPROP = 'ethanol';
             fuel_temp = 293.15;
         else
@@ -253,10 +253,6 @@ disp(['                         O/F Ratio: ' num2str(OF)]);
 fprintf('\n')
 disp(['                     CEA Isp (sec): ' num2str(cea_isp)]);
 disp(['                Expected Isp (sec): ' num2str(isp)]);
-disp(['                     CEA C* (ft/s): ' num2str(cea_c_star)]);
-disp(['                Expected C* (ft/s): ' num2str(c_star)]);
-disp(['      Expected C* Efficiency (N/A): ' num2str(eff_c_star)]);
-disp(['      Expected Cf Efficiency (N/A): ' num2str(eff_c_f)]);
 disp([' Effective Exhaust Velocity (ft/s): ' num2str(c)]);
 disp(['    Mass Flow Rate (total) (lbm/s): ' num2str(m_dot)]);
 disp(['     Mass Flow Rate (fuel) (lbm/s): ' num2str(m_dot_FUEL)]);

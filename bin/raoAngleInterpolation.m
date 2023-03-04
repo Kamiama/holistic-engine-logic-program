@@ -30,7 +30,7 @@ thetaEspline = spline(expRatio,thetaE,expRatio2);
 thetaNslope = (thetaNspline(2)-thetaNspline(1))/(expRatio2(2)-expRatio2(1));
 thetaEslope = (thetaEspline(2)-thetaEspline(1))/(expRatio2(2)-expRatio2(1));
 
-expRatioMin = 2; % minimum extrapolated expansion ratio
+expRatioMin = 1.5; % minimum extrapolated expansion ratio
 
 % values for thetaN and thetaE at minimum expansion ratio
 thetaNmin = thetaN(1) + thetaNslope*(expRatioMin-expRatio(1));
@@ -46,7 +46,7 @@ thetaEspline = spline(expRatio,thetaE,expRatio2);
 
 % for loop to check input against expansion ratios
 m = 1;
-for n = expRatioMin:0.0001:50
+for n = expRatioMin:0.001:50
     if exp_ratio == n
         break
     end
