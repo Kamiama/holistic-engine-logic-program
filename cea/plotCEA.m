@@ -14,7 +14,7 @@ clc;
 file_name = 'plotcea';
 
 %% Assign Inputs
-P_c = 250;            % chamber pressure [psi]
+P_c = 300;            % chamber pressure [psi]
 P_e = 14.7;           % exit pressure [psi]
 fuel = {'C3H8O,2propanol'};  % fuel formula for NASA CEA
 fuel_temp = [293.15];   % fuel temperature [K]
@@ -24,9 +24,9 @@ oxidizer_temp = 0;   % fuel temperature [K]
 OF = 1.3;
 
 iterating_value = "OF";
-min_value_OF = .7;
-max_value_OF = 2;
-step_value_OF = .02;
+min_value_OF = .2;
+max_value_OF = 7;
+step_value_OF = .2;
 
 min_value_P_c = 50;
 max_value_P_c = 300;

@@ -60,6 +60,7 @@ file_name = strcat(run_description, write_date); % output file name
     enableREFPROP = 1;
     enableFigures = 1;
     enableDebug = 1;
+    throttleAnalysis = 1;
     if enableREFPROP
         sizeFluids = 0;
         sizeInjector = 1;
@@ -187,7 +188,6 @@ file_name = strcat(run_description, write_date); % output file name
         elseif injector_type == "shear"
 
         end
-
     
     % cooling properties
         cooling_type = "regen";  % cooling method (regen or ablative)
@@ -298,6 +298,11 @@ R_e = D_e / 2;            % exit radius [in]
 %% Generate Nozzle Contour
 [x_contour, r_contour, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size);
 
+%% Throttle Analysis
+if throttleAnalysis
+    throttle();
+end
+
 %% Cooling Calculations
 if sizeCooling
     % factor in film cooling
@@ -307,7 +312,7 @@ if sizeCooling
 
     % size regenerative cooling
     if cooling_type == "regen"
-        %[] = sizeRegen(x_contour, y_contour, R_t, nozzle_regen_pct, M, gamma, P, T, rho, mu, Pr, Mw, k, son, vel);
+        coolingTemp(x_contour, r_contour, R_t, nozzle_regen_pct, m_dot, P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF);
 
     % size ablative cooling
     elseif cooling_type == "ablative"

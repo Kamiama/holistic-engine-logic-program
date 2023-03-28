@@ -142,6 +142,7 @@ supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
     %% Step 2: Calculate Number of channels and channel mass flow rate
     numchannels = pi * (D_t + 0.8 * (D_t + 2 * t_w)) / (D_t + 2 * t_w); %Number of Channels (EQ 6.30) (Change the coefficient later)
     mdotchan = mdotf / numchannels; %Mass flow of channel (EQ 6.31)
+    
     %% Step 3: Begin Stepping Down tube/channel
     %Property Initializations
 

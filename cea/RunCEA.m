@@ -109,7 +109,6 @@ if convert_to_imperial
     %exp_ratio = 1 / M(end) * ((2 + (gamma(1) - 1 ) * M(end) ^ 2) / (gamma(1) + 1)) ^ ((gamma(1) + 1) / (2 * (gamma(1) - 1))); % calculate expansion ratio manually
     P = P.* 1.45038E-4; % convert [Pa] to [psi]
     isp = isp(end) / 9.8067; % normalize isp to seconds
-    exp_ratio = exp_ratio(end); % select expansion ratio
     c_star = c_star(1) * 3.281; % convert [m/s] to [ft/s]
     T = T .* 1.8; % convert [K] to [R]
     rho = rho * 3.613E-5; % convert [kg/m^3] to [lbm/in^3]
@@ -120,3 +119,4 @@ else
     isp = isp(end);
     c_star = c_star(1);
 end
+exp_ratio = exp_ratio(end); % select expansion ratio
