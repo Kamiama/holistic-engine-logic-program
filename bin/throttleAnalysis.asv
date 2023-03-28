@@ -58,7 +58,7 @@ eff_c_f = .9;
 eff_c_star = .94;
 g = 32.174; % gravitational acceleration [ft/s^2]
 
-fineness = 20;
+fineness = 5;
 
 % initialize throttle range and desired variable matrices
 throttle = linspace(1, min_throttle_pct, fineness); % throttle percent matrix
@@ -67,7 +67,6 @@ Fs_temp = zeros(1, fineness); % temporary thrust matrix for iterative solving
 P_cs = P_c_max .* throttle; % initial chamber pressure matrix with initial assumption of linear correlation
 P_es = zeros(1, fineness);
 m_dots = zeros(1, fineness);
-isps = zeros(1, fineness);
 
 
 %% Get Parameters at Full Throttle
@@ -139,7 +138,7 @@ for P_c = P_cs
     % record variables to matrices
     Fs(index) = Fs_temp(index);
     m_dots(index) = A_t / (cea_c_star * eff_c_star) * P_c_guess * g;
-    isps(index) = cea_isp * eff_c_star * eff_c_f;
+    isps(i)
     P_cs(index) = P_c_guess;
     P_es(index) = P_e;
 
@@ -150,30 +149,28 @@ end
 %% Plot Results
 figure(1)
 hold on
+grid on
 
-subplot(1,3,1)
+subplot(3,1,1)
 plot(Fs, P_cs, 'blue');
 title('Chamber Pressure vs Throttle')
 xlabel('Thrust [lbf]')
 ylabel('Chamber Pressure [psi]')
 axis([Fs(end) Fs(1) P_cs(end) P_cs(1)])
-grid on
 
-subplot(1,3,2)
+subplot(3,1,2)
 plot(Fs, m_dots, 'blue');
 title('Mass Flow Rate vs Throttle')
 xlabel('Thrust [lbf]')
 ylabel('Mass Flow Rate [lb/s]')
 axis([Fs(end) Fs(1) m_dots(end) m_dots(1)])
-grid on
 
-subplot(1,3,3)
-plot(Fs, isps, 'blue');
+subplot(3,1,3)
+plot(Fs, m_dots, 'blue');
 title('Isp vs Throttle')
 xlabel('Thrust [lbf]')
 ylabel('isp [sec]')
-axis([Fs(end) Fs(1) isps(end) isps(1)])
-grid on
+axis([Fs(end) Fs(1) m_dots(end) m_dots(1)])
 
 sgtitle("Throttle Analysis:   " + F_max + "lbf, " + P_c_max + " psi P_c," + OF + " OF ratio, down to " + min_throttle_pct * 100 + "% throttle")
 
