@@ -38,15 +38,22 @@ clear;
 clc;
 
 %% Identify OS & Generate Paths 
+% add paths
+current_dir = fileparts(mfilename('fullpath'));
+main_dir = fileparts(current_dir);
+cea_path = fullfile(main_dir, 'cea');
+addpath(cea_path);
 
 %% Initializion & Variable Definition
 
+% debugging values
 min_throttle_pct = .2;
 F_max = 500;
 A_t = 1.45;
 P_c_max = 250;
 P_e = 14.7;
-P_a = P_e;
+P_a = 14.7;
+P_sep = P_a * .4;
 fuel = 'C3H8O,2propanol';
 fuel_weight = 0;
 fuel_temp = 293.15;
@@ -58,7 +65,7 @@ eff_c_f = .9;
 eff_c_star = .94;
 g = 32.174; % gravitational acceleration [ft/s^2]
 
-fineness = 20;
+fineness = 7;
 
 % initialize throttle range and desired variable matrices
 throttle = linspace(1, min_throttle_pct, fineness); % throttle percent matrix
@@ -68,6 +75,7 @@ P_cs = P_c_max .* throttle; % initial chamber pressure matrix with initial assum
 P_es = zeros(1, fineness);
 m_dots = zeros(1, fineness);
 isps = zeros(1, fineness);
+rel_isps = zeros(1, fineness);
 
 
 %% Get Parameters at Full Throttle
@@ -88,9 +96,10 @@ c_f_max = (sqrt(((2*gamma_max^2)/(gamma_max-1)) * (2/(gamma_max+1))^((gamma_max+
 % basic calculations
 A_t = F_max / c_f_max / P_c_max;
 m_dot = A_t / c_star_max * P_c_max * g; % mass flow rate at full throttle [lb/s]
+isp_max = c_star_max * c_f_max / g;
 
 
-%% Initial Solution for Throttle Range
+% Initial Solution for Throttle Range
 
 % initialize loop variables
 index = 1;
@@ -109,7 +118,7 @@ for P_c = P_cs
     % loop
     while abs(Fs(index) - Fs_temp(index)) > tolerance && iter < max_iter
         % run CEA for given P_c_new
-        [cea_c_star, cea_isp, ~, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c_guess, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
+        [cea_c_star, ~, ~, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c_guess, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
         
         % extract CEA values
         gamma = gamma(1);
@@ -139,7 +148,8 @@ for P_c = P_cs
     % record variables to matrices
     Fs(index) = Fs_temp(index);
     m_dots(index) = A_t / (cea_c_star * eff_c_star) * P_c_guess * g;
-    isps(index) = cea_isp * eff_c_star * eff_c_f;
+    isps(index) = cea_c_star * c_f * eff_c_star / g;
+    rel_isps(index) = isps(index) / isp_max;
     P_cs(index) = P_c_guess;
     P_es(index) = P_e;
 
@@ -151,30 +161,52 @@ end
 figure(1)
 hold on
 
-subplot(1,3,1)
-plot(Fs, P_cs, 'blue');
+% chamber pressure plot
+subplot(2,2,1)
+plot(throttle, P_cs, 'blue');
 title('Chamber Pressure vs Throttle')
-xlabel('Thrust [lbf]')
+xlabel('Throttle %')
 ylabel('Chamber Pressure [psi]')
-axis([Fs(end) Fs(1) P_cs(end) P_cs(1)])
+axis([throttle(end) throttle(1) P_cs(end) P_cs(1)])
 grid on
 
-subplot(1,3,2)
-plot(Fs, m_dots, 'blue');
+% mass flow rate plot
+subplot(2,2,2)
+plot(throttle, m_dots, 'blue');
 title('Mass Flow Rate vs Throttle')
-xlabel('Thrust [lbf]')
+xlabel('Throttle %')
 ylabel('Mass Flow Rate [lb/s]')
-axis([Fs(end) Fs(1) m_dots(end) m_dots(1)])
+axis([throttle(end) throttle(1) m_dots(end) m_dots(1)])
 grid on
 
-subplot(1,3,3)
-plot(Fs, isps, 'blue');
+% exit pressure plot
+subplot(2,2,3)
+plot(throttle, P_es, 'blue');
+title('Exit Pressure vs Throttle')
+xlabel('Throttle %')
+ylabel('Exit Pressure [psi]')
+axis([throttle(end) throttle(1) P_sep-1 P_es(1)])
+% flow separation line
+line([-100 100],[P_sep P_sep], 'Color', 'red', 'LineStyle', '--')
+grid on
+
+% isp plot
+subplot(2,2,4)
+% relative isps
+yyaxis left
+plot(throttle, rel_isps, 'blue');
 title('Isp vs Throttle')
-xlabel('Thrust [lbf]')
-ylabel('isp [sec]')
-axis([Fs(end) Fs(1) isps(end) isps(1)])
+xlabel('Throttle %')
+ylabel('I_(sp) / I_(sp)^(nom)')
 grid on
+set(gca, 'YLim', [rel_isps(end), rel_isps(1)])
+% actual isps
+yyaxis right
+isp_axis = flip(round(rel_isps .* isp_max .* 10) ./ 10);
+set(gca,'YTick', isp_axis, 'YLim', [min(isp_axis), max(isp_axis)])
+ylabel('isp [sec]')
 
-sgtitle("Throttle Analysis:   " + F_max + "lbf, " + P_c_max + " psi P_c," + OF + " OF ratio, down to " + min_throttle_pct * 100 + "% throttle")
+
+sgtitle("Throttled Chamber Performance:  " + F_max + "lbf, " + P_c_max + " psi P_c," + OF + " OF ratio, down to " + min_throttle_pct * 100 + "% throttle")
 
 
