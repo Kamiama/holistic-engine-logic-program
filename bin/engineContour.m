@@ -32,7 +32,7 @@ conv_angle = conv_angle * pi /180;     % convergence angle [rad]
 % set default converging/diverging fillets (do not change unless you know what you're doing)
 R_converging_fillet = 1.5;             % radius modifier for converging fillet [in]
 R_diverging_fillet = .382;             % radius modifier for diverging fillet [in]
-R_chamber_fillet = .5;                 % radius modifier for chamber fillet [in]
+R_chamber_fillet = .75;                 % radius modifier for chamber fillet [in]
 
 % perform intermediate geometry calculations
 A_t = (R_t) .^ 2 .* pi;                % throat area [in^2]
@@ -122,7 +122,7 @@ if geometry_type == "conical"
 
 % generate curve for bell geometry
 elseif geometry_type == "bell"
-    L_nozzle = bell_pct / 100 * L_nozzle; % truncate nozzle length for bell contour
+    L_nozzle = bell_pct * L_nozzle; % truncate nozzle length for bell contour
     
     % bell section - generate a bezier curve (http://www.aspirespace.org.uk/downloads/Thrust%20optimised%20parabolic%20nozzle.pdf)
         
@@ -194,7 +194,7 @@ disp(['                     Theta e (deg): ' num2str(theta_e*180/pi)]);
 fprintf('---------- Contour Outputs ----------\n')
 
 %% Display Results
-figure(1)
+figure('Name', 'Engine Contour Plot')
 hold on
 grid on
 

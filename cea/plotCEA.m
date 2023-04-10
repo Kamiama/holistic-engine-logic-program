@@ -14,19 +14,18 @@ clc;
 file_name = 'plotcea';
 
 %% Assign Inputs
-P_c = 300;            % chamber pressure [psi]
-P_e = 14.7;           % exit pressure [psi]
+P_c = 200;            % chamber pressure [psi]
+P_e = 18;           % exit pressure [psi]
 fuel = {'C3H8O,2propanol'};  % fuel formula for NASA CEA
 fuel_temp = [293.15];   % fuel temperature [K]
 fuel_weight = 0;      % fuel weights, does nothing now
 oxidizer = {'O2(L)'}; % oxidizer formula for NASA CEA
 oxidizer_temp = 0;   % fuel temperature [K]
-OF = 1.3;
 
 iterating_value = "OF";
 min_value_OF = .2;
-max_value_OF = 7;
-step_value_OF = .2;
+max_value_OF = 2;
+step_value_OF = .05;
 
 min_value_P_c = 50;
 max_value_P_c = 300;
@@ -60,36 +59,36 @@ elseif iterating_value == "P_c"
 end
 
 %% Plot Reults
-figure(1)
+figure('Name', 'PlotCEA')
 hold("on")
 
-subplot(1,2,1)
-plot(matrix, T_matrix, 'black');
-if iterating_value == "OF"
-    title('OF vs Temperature')
-    xlabel('OF')
-elseif iterating_value == "P_c"
-    title('P_c vs Temperature')
-    xlabel('P_c [psi]')
-end
-ylabel('Adiabatic Flame Temperature [K]')
-grid on
-
-subplot(1,2,2)
+yyaxis left
 plot(matrix, isp_matrix, 'blue');
 if iterating_value == "OF"
-    title('OF vs isp')
     xlabel('OF')
 elseif iterating_value == "P_c"
-    title('P_c vs isp')
     xlabel('P_c [psi]')
 end
 ylabel('Ideal Isp (sec)')
+set(gca, 'Ycolor', 'k')
+
+yyaxis right
+plot(matrix, T_matrix, 'red');
+if iterating_value == "OF"
+    xlabel('OF')
+elseif iterating_value == "P_c"
+    xlabel('P_c [psi]')
+end
+ylabel('Combustion Temperature [K]')
+set(gca, 'Ycolor', 'k')
+
+grid on
+legend('Ideal Isp', 'Combustion Temperature', 'Location', 'Northwest')
 
 if iterating_value == "OF"
-    sgtitle(iterating_value + " plot:     " + fuel + " / " + oxidizer + " @ " + P_c + " psi P_c, " + P_e + " psi P_e")
+    title(iterating_value + " plot:     " + fuel + " / " + oxidizer + " @ " + P_c + " psi P_c, " + P_e + " psi P_e")
 elseif iterating_value == "P_c"
-    sgtitle(iterating_value + " plot:     " + fuel + " / " + oxidizer + " @ " + OF + " OF ratio, " + P_e + " psi P_e")
+    title(iterating_value + " plot:     " + fuel + " / " + oxidizer + " @ " + OF + " OF ratio, " + P_e + " psi P_e")
 end
 
 grid on
