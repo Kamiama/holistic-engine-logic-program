@@ -1,7 +1,7 @@
 %% Holistic Engine Logic Program (HELP)
 % Author: Kamon Blong (kamon.blong@gmail.com)
 % First Created: 7/10/2022
-% Last Updated: 
+% Last Updated: 4/10/2023
 %{ 
 
 Description: 
@@ -21,6 +21,7 @@ boiling point.
 
 clear;
 clc;
+close all;
 
 %% Import Data
 % import input properties
@@ -63,8 +64,8 @@ file_name = strcat(run_description, write_date); % output file name
     throttleAnalysis = 1;
     if enableREFPROP
         sizeFluids = 0;
-        sizeInjector = 1;
-        sizeCooling = 1;
+        sizeInjector = 0;
+        sizeCooling = 0;
     end
 
 %% Parse Variables & Define Constants
@@ -77,6 +78,7 @@ file_name = strcat(run_description, write_date); % output file name
         P_e = xlsread(input_data, 'Engine', 'C10');                % exit pressure [psi] (equals P_a for optimal expansion)
         eff_c_star = xlsread(input_data, 'Engine', 'C12') / 100;   % c* efficiency
         eff_c_f = xlsread(input_data, 'Engine', 'C13') / 100;      % cF efficiency
+        min_throttle_pct = xlsread(input_data, 'Engine', 'C14') / 100;      % cF efficiency
     
     % propellant properties
         [~, txt] = xlsread(input_data, 'Engine', 'H10');
@@ -215,9 +217,11 @@ CEA_output_name = append(CEA_name_prefix, '.out');
 
 %% Intermediate Calculations
 
-% correct cea values & find effective exhaust velocity
-isp = cea_isp * eff_c_star * eff_c_f;          % expected isp [sec]
+% correct cea values & solve for specific impulse
+gamma = gamma(1); % chamber gamma
+c_f = (sqrt(((2*gamma^2)/(gamma-1)) * (2/(gamma+1))^((gamma+1)/(gamma-1)) * (1-(P_e/P_c)^((gamma-1)/gamma))) + (P_e-P_a)*exp_ratio/P_c) * eff_c_f; % thrust coefficient
 c_star = cea_c_star * eff_c_star;              % expected c* [ft/s]
+isp = c_star * c_f / g;                        % specific impulse [sec]
 c = isp * g;                                   % effective exhaust velocity [ft/s]
     
 % size m_dot normally
@@ -263,7 +267,7 @@ disp(['     Mass Flow Rate (fuel) (lbm/s): ' num2str(m_dot_FUEL)]);
 disp([' Mass Flow Rate (oxidizer) (lbm/s): ' num2str(m_dot_OX)]);
 disp(['         Adiabatic Flame Temps (R): ' num2str(T(1)) ' ' num2str(T(2))]);
 disp(['                         Exit Mach: ' num2str(M(end))]);
-disp(['                            Gammas: ' num2str(gamma(1)) ' ' num2str(gamma(2))]);
+disp(['                     Chamber Gamma: ' num2str(gamma)]);
 fprintf('-------- Performance Outputs --------\n')
 
 %% Basic Geometry Calculations
@@ -300,7 +304,7 @@ R_e = D_e / 2;            % exit radius [in]
 
 %% Throttle Analysis
 if throttleAnalysis
-    throttle();
+    throttle(min_throttle_pct, F, eff_c_star, eff_c_f, P_c, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name);
 end
 
 %% Cooling Calculations
