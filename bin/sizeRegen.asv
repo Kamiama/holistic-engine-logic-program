@@ -68,6 +68,7 @@ oxidizer = 'O2(L)';
 oxidizer_temp = 90.17; % [K]
 OF = 1.3;
 CEA_input_name = 'test';
+g = 32.174 * u.F2IN; % gravitational acceleration [in/s^2]
 
 
 %% Parse variables
@@ -87,20 +88,20 @@ CEA_input_name = 'test';
         t_w = 0.001;        % [m]
         height = 0.0015;    % [m]
         width = 0.0015;     % [m]
-        length = 0.001;      % [m], arbitrary for now
+        length = 0.01;      % [m]
         hydraulic_D = 4 * height * width / (2 * (height + width)); % [m]
-        area = width * length; % [m^2]
+        area = width * length; % m^2
    
     % working fluid properties
-        fuel_pressure = 45 * u.PSI2PA; % [Pa]
-        fuel_temp = 294.261; % [K]
+        fuel_pressure = 250 * u.PSI2PA; % Pa
+        fuel_temp = 294.261; % K
 
     % engine properties
-        mdotf = 1.2566 * u.LB2KG; % Coolant/fuel mass flow [kg/s]
+        mdotf = 1.2566 * u.LB2KG; % Coolant/fuel mass flow kg/s
 
     % wall material properties
         kw = 247; % Thermal Conductivity of Wall [W/m-K]
-        E = 10; %Youngs modulus of elasticisty of the tube wall material
+        E = 10; %Youngs modulus of elaticisty of the tube wall material
         a = 10; %Thermal expansion coefficient of the tube wall material
         v = 24; %Poisson ration of the tube wall material
 
@@ -131,22 +132,26 @@ fuel_pressure(1:stepnum) = fuel_pressure;
 
 loc = 2;
 iter = 0; % Number of convergence loops
-step = 500;
+step = 1000;
 i = 2;
 while i <= stepnum
     % Gas Side
     sigma = (.5 * T_wg(i) / T_c(loc) * (1 + (gamma(loc) - 1) / 2 * M(loc) ^ 2) + .5) ^ -.68 * (1 + (gamma(loc) - 1) / 2 * M(loc) ^ 2) ^ -.12; % film coefficient correction factor (Huzel & Huang 86).
-    h_g = (0.026 / D_t ^ 0.2) * (mu(loc) ^ 0.2 * cp(loc) / Pr_gas(loc) ^ 0.6) * (P_c_max / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % film coefficient - bartz equation (Huzel & Huang 86).
+    (0.5 * T_wg(i) / T_c(loc) * (1 + (gamma(loc) - 1) / 2) * M(loc) ^ 2 + 0.5) ^ 0.68 * ((1 + ((gamma - 1) / 2) * machNum^2))^0.12
+
+    h_g = (.026 / D_t ^ .2) * (mu(loc) ^ .2 * cp(loc) / Pr_gas(loc) ^ .6) * (P_c_max * g / c_star) ^ .8 * (D_t / R_of_curve) ^ .1 * (A_t / A_t) ^ .9 * sigma; % film coefficient - bartz equation (Huzel & Huang 86).
+
+
     r = Pr_gas(loc) ^ (1 / 3); 
     Tr = T_c(loc) * (1 + (gamma(loc) - 1) / 2 * r * M(loc) ^ 2); % [K]
     qdotG(i) = h_g * (Tr - T_wg(i)); % [W/m^2]
     T_wl(i) = T_wg(i) - qdotG(i) * t_w / kw; % [K]
 
     % Liquid Side
-    visc_fuel = py.CoolProp.CoolProp.PropsSI('V','T', fuel_temp(i-1),'P', fuel_pressure(i-1),'Water'); % [Pa-s]
-    visc_surface = py.CoolProp.CoolProp.PropsSI('V','T', T_wl(i),'P', fuel_pressure(i-1),'Water'); % [Pa-s]
-    cp_fuel = py.CoolProp.CoolProp.PropsSI('C' , 'T', fuel_temp(i-1), 'P', fuel_pressure(i-1), 'Water'); % [J/kg-k] 
-    k_fuel = py.CoolProp.CoolProp.PropsSI('L', 'T', fuel_temp(i-1), 'P', fuel_pressure(i-1), 'Water'); % [W/m-K]
+    visc_fuel = py.CoolProp.CoolProp.PropsSI('V','T', fuel_temp(i-1),'P', fuel_pressure(i-1),'C3H8'); % [Pa-s]
+    visc_surface = py.CoolProp.CoolProp.PropsSI('V','T', T_wl(i),'P', fuel_pressure(i-1),'C3H8'); % [Pa-s]
+    cp_fuel = py.CoolProp.CoolProp.PropsSI('C' , 'T', fuel_temp(i-1), 'P', fuel_pressure(i-1), 'C3H8'); % [J/kg-k] 
+    k_fuel = py.CoolProp.CoolProp.PropsSI('L', 'T', fuel_temp(i-1), 'P', fuel_pressure(i-1), 'C3H8'); % [W/m-K]
     
     reynolds = (4 * mdotchan) / (pi * hydraulic_D * visc_fuel);
     prandtl = (cp_fuel * visc_fuel) / k_fuel;    
@@ -167,10 +172,10 @@ while i <= stepnum
     else 
         fuel_temp(i) = fuel_temp(i-1) + 1 / (mdotchan * cp_fuel) * qdotG(i) * area; 
         %pressure(i) = pressure(i-1) + 
-        fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
+        fprintf("Gas Side Wall Temp (F): %0.2f\n", T_wg(i))
 
         i = i + 1;
-        step = 500;
+        step = 1000;
         qdotG(i) = qdotG(i-1);
     end
 end

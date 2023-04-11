@@ -115,7 +115,7 @@ if convert_to_imperial
     mu = mu * 1.450E-4; % convert [Pa-s] to [psi-s]
     Mw = Mw * 2.205; % convert [kg/kmol] to [lbm/kmol]
     k = k * 0.5782; % convert [W/m-K] to [Btu/hr-ft-R]
-    cp = cp / 4184; % convert [J/kg-k] to [BTU/lb-F]
+    cp = cp / 4184; % convert [BTU/lb-F]
 else
     isp = isp(end);
     c_star = c_star(1);
