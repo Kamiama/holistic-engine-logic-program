@@ -59,7 +59,7 @@ clear
 clc
 
 u = convertUnits;
-A_t = 2.0541 * u.IN2M * 2; % [m^2]
+A_t = 2.0541 * u.IN2M ^ 2; % [m^2]
 P_c_max = 220; % [Psi]
 P_e = 14.7; % [Psi]
 fuel = 'C3H8O,2propanol';
@@ -92,24 +92,24 @@ CEA_input_name = 'test';
         area = width * length; % [m^2]
    
     % working fluid properties
-        fuel_pressure = 45 * u.PSI2PA; % [Pa]
+        fuel_pressure = 240 * u.PSI2PA; % [Pa]
         fuel_temp = 294.261; % [K]
 
     % engine properties
-        mdotf = 1.2566 * u.LB2KG; % Coolant/fuel mass flow [kg/s]
+        mdotf = 10 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 
     % wall material properties
-        kw = 247; % Thermal Conductivity of Wall [W/m-K]
-        E = 10; %Youngs modulus of elasticisty of the tube wall material
-        a = 10; %Thermal expansion coefficient of the tube wall material
-        v = 24; %Poisson ration of the tube wall material
+        kw = 110; % Thermal Conductivity of Wall [W/m-K]
+        E = 70E9; % in Pa
+        CTE = 27E-6; % in 1/K
+        nu = 0.3; 
 
 %% Calculate minimum wall thickness
 % determine optimal wall thickness based on throat conditions (because this is the most extreme location in the engine)
 
 % Set Initial Properties
-numchannels = pi * (D_t + 0.8 * (D_t + 2 * t_w)) / (D_t + 2 * t_w); %Number of Channels (EQ 6.30) (Change the coefficient later)
-mdotchan = mdotf / 40; %Mass flow of channel (EQ 6.31)
+numchannels = 40; %pi * (D_t + 0.8 * (D_t + 2 * t_w)) / (D_t + 2 * t_w); %Number of Channels (EQ 6.30) (Change the coefficient later)
+mdotchan = mdotf / numchannels; %Mass flow of channel (EQ 6.31)
 
 [c_star, ~, ~, M, gamma, P, T_c, rho, mu, Pr_gas, Mw, ~, son, cp] = RunCEA(P_c_max, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 1, 0);
 P_c_max = P_c_max * u.PSI2PA;
@@ -131,7 +131,7 @@ fuel_pressure(1:stepnum) = fuel_pressure;
 
 loc = 2;
 iter = 0; % Number of convergence loops
-step = 500;
+step = 200;
 i = 2;
 while i <= stepnum
     % Gas Side
@@ -170,14 +170,134 @@ while i <= stepnum
         fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
 
         i = i + 1;
-        step = 500;
+        step = 200;
         qdotG(i) = qdotG(i-1);
     end
 end
 
 
+%% Thermal FEA
+M = 150;
+N = 150;
+R1 = R_t; % inner radius 
+R2 = R_t + height * 4;  % outer radius
+nR = linspace(R1,R2,M);
+nT = linspace(-pi/numchannels, pi/numchannels + width / R_t, N);
+[R, T] = meshgrid(nR,nT) ;
+xg = R.*cos(T); 
+yg = R.*sin(T);
+xg = xg(:);
+yg = yg(:);
 
+% Define partial channel 
+M = 50;
+N = 50;
+R1 = R_t + t_w; % inner radius 
+R2 = R_t + t_w + height;  % outer radius
+x = linspace(R1,R2,M);
+y = linspace(-pi/numchannels - width / R_t / 2, -pi/numchannels + width / R_t / 2, N);
+[R, T] = meshgrid(x, y);
+x = R.*cos(T); 
+y = R.*sin(T);
+x = x(:);
+y = y(:);
+channel = alphaShape(x,y);
+in = inShape(channel,xg,yg);
+xg = xg(~in);
+yg = yg(~in);
 
+% Define full channel 
+M = 50;
+N = 50;
+R1 = R_t + t_w; % inner radius 
+R2 = R_t + t_w + height;  % outer radius
+x = linspace(R1,R2,M);
+y = linspace(pi/numchannels - width / R_t / 2, pi/numchannels + width / R_t / 2, N);
+[R, T] = meshgrid(x, y);
+x = R.*cos(T); 
+y = R.*sin(T);
+x = x(:);
+y = y(:);
+channel = alphaShape(x,y);
+in = inShape(channel,xg,yg);
+xg = xg(~in);
+yg = yg(~in);
+
+zg = ones(numel(xg),1);
+xg = repmat(xg,5,1);
+yg = repmat(yg,5,1);
+zg = zg*linspace(0,length,5);
+zg = zg(:);
+shp = alphaShape(xg,yg,zg);
+
+[elements,nodes] = boundaryFacets(shp);
+
+nodes = nodes';
+elements = elements';
+
+% Generate model
+model = createpde("thermal","steadystate");
+geometryFromMesh(model,nodes,elements);
+
+pdegplot(model,"FaceLabels","on","FaceAlpha",0.5)
+
+generateMesh(model,"Hmax",height/12);
+% figure
+% pdemesh(model)
+
+% Define material thermal properties
+thermalProperties(model,"ThermalConductivity",kw);
+
+% Thermal boundary conditions
+thermalBC(model,"Face",10, ...
+                 "ConvectionCoefficient",h_g, ...
+                 "AmbientTemperature",Tr);
+thermalBC(model,"Face",[5 13 7 3 11 12 14], ...
+                 "ConvectionCoefficient",h_l, ...
+                 "AmbientTemperature",fuel_temp(1));
+Rt = solve(model);
+
+figure
+pdeplot3D(model,"ColorMapData",Rt.Temperature)
+view([-90,90]);
+
+maxTempFEA = max(Rt.Temperature)
+
+%% Structural FEA
+model = createpde("structural","static-solid");
+geometryFromMesh(model,nodes,elements);
+generateMesh(model,"Hmax",1.84e-04);
+
+% Material properties
+structuralProperties(model,"YoungsModulus",E, ...
+                             "PoissonsRatio",nu, ...
+                             "CTE",CTE);
+model.ReferenceTemperature = 300 + 273.15; %in degrees K
+structuralBodyLoad(model,"Temperature",Rt);
+
+% Structural boundary conditions
+structuralBC(model,"Face",8,"Constraint","fixed");
+structuralBoundaryLoad(model,"Face",[5 13 7 3 11 12 14],"Pressure",fuel_pressure(end));
+structuralBoundaryLoad(model,"Face",10,"Pressure",P_c_max);
+
+% Solve structural
+Rts = solve(model);
+
+% Display results
+figure("units","normalized");
+hold on
+plot3(x(1),y(1),zg(end), "+", "LineWidth", 2,'Color','r')
+pdeplot3D(model,"ColorMapData",Rts.VonMisesStress, ...
+                  "Deformation",Rts.Displacement, ...
+                  "DeformationScaleFactor",2)
+view([-90,90]);
+caxis([1e6, 3e8])
+
+channelVonMises(1) = interpolateVonMisesStress(Rts,x(1),y(1),zg(end));
+channelVonMises(2) = interpolateVonMisesStress(Rts,x(1),y(end),zg(end));
+channelVonMises(3) = interpolateVonMisesStress(Rts,x(end),y(1),zg(end));
+channelVonMises(4) = interpolateVonMisesStress(Rts,xg(round(size(xg,1)-13200)),y(end),zg(end));
+maxVonMisesStressFEA = max(channelVonMises)
 
 
 % 
