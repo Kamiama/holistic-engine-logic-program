@@ -4,7 +4,7 @@
 % First Created: 7/17/2022
 % Last Updated: 10/23/2022
 
-function [x_total, r_total, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size)
+function [x_contour, r_contour, L_c, L_total, L_seg] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size, resolution)
 
 %{ 
 Description: 
@@ -16,8 +16,10 @@ Outputs:
 - 
 %}
 
+debug = 0;
+
 % interpolate initial and exit rao angles
-[theta_i, theta_e] = raoAngleInterpolation(exp_ratio); 
+[theta_i, theta_e] = raoAngleInterpolation(exp_ratio, debug); 
 
 % set conical half angle
 if geometry_type == "conical"
@@ -159,7 +161,7 @@ x_total = [x_chamber, x_throat, x_nozzle];
 r_total = [y_chamber, y_throat, y_nozzle];
 
 % remove repeated indices
-[unused, unique_index] = unique(x_total);
+[~, unique_index] = unique(x_total);
 unique_index_sorted = sortrows(unique_index);
 x_total = x_total(unique_index_sorted);
 r_total = r_total(unique_index_sorted);
@@ -217,3 +219,7 @@ xlabel('Inches X')
 ylabel('Inches Y')
 axis([x_total(1)-L_total*.1 x_total(end)+L_total*.1 -L_total*.6 L_total*.6])
 hold off
+
+%% Discretize into equal spaced points
+
+[x_contour, r_contour, L_seg] = splitContour(x_total, r_total, resolution, debug);

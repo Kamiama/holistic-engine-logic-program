@@ -1,7 +1,7 @@
 problem rocket eq
-    p(psi) = 250
+    p(psi) = 220
     o/f = 1.3
-    pip = 17.0068
+    pip = 12.2222
 reac
     fuel = C3H8O,2propanol t(K) = 293.150 wt% = 100.000
     ox = O2(L) t(K) = 90.170

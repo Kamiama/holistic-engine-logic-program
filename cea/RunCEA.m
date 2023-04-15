@@ -3,7 +3,7 @@
 % First Created: 7/17/2022
 % Last Updated: 
 
-function [c_star, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, file_name, throat, convert_to_imperial)
+function [c_star, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, throat, imperial_inputs, imperial_ouputs, file_name)
 
 %{ 
 Description: Sends engine performance and fuel properties to NASA CEA where
@@ -34,17 +34,22 @@ inp('type') = 'eq';              % sets the type of CEA calculation
 inp('file_name') = file_name;    % input/output file name
 
 % general parameters
-inp('p') = P_c;                  % chamber pressure
-inp('p_unit') = 'psi';           % chamber pressure units
+if imperial_inputs
+    inp('p') = P_c;                  % chamber pressure
+    inp('p_unit') = 'psi';           % chamber pressure units
+else
+    inp('p') = P_c / 100000;         % chamber pressure
+    inp('p_unit') = 'bar';           % chamber pressure units
+end
 if sub(1) && sup(1) ~= 0
     inp('sub') = sub;            % subsonic area ratios
     inp('sup') = sup;            % supersonic area ratios
-elseif throat
-    inp('sup') = 1;              % supersonic area ratios
 elseif sub(1)
     inp('sub') = sub;            % subsonic area ratios
 elseif sup(1)
     inp('sup') = sup;            % supersonic area ratios
+elseif throat
+    inp('sup') = 1;              % supersonic area ratios
 else
     inp('pip') = P_c / P_e;      % pressure ratios  
 end
@@ -105,7 +110,7 @@ oxidizer_temp = ('ox_t');
 fuel_temp = ('fuel_t');
 
 %% Convert & Correct Outputs
-if convert_to_imperial
+if imperial_ouputs
     %exp_ratio = 1 / M(end) * ((2 + (gamma(1) - 1 ) * M(end) ^ 2) / (gamma(1) + 1)) ^ ((gamma(1) + 1) / (2 * (gamma(1) - 1))); % calculate expansion ratio manually
     P = P.* 1.45038E-4; % convert [Pa] to [psi]
     isp = isp(end) / 9.8067; % normalize isp to seconds
@@ -119,5 +124,22 @@ if convert_to_imperial
 else
     isp = isp(end);
     c_star = c_star(1);
+end
+if throat
+    if M(end) == 0
+        M = 1;
+    else
+        M = M(end);
+    end
+    gamma = gamma(end);
+    P = P(end);
+    T = T(end);
+    rho = rho(end);
+    mu = mu(end);
+    Pr = Pr(end);
+    Mw = Mw(end);
+    k = k(end);
+    son = son(end);
+    cp = cp(end);
 end
 exp_ratio = exp_ratio(end); % select expansion ratio

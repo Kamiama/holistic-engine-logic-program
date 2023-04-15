@@ -9,9 +9,7 @@
 % output: thetaNout (nozzle angle near throat), thetaEout (nozzle exit 
 % angle), both in degrees
 
-function [theta_i, theta_e] = raoAngleInterpolation(exp_ratio)
-
-debugPlot = 0;
+function [theta_i, theta_e] = raoAngleInterpolation(exp_ratio, debug)
 
 %% theta outputs for expansion ratio input
 expRatio = [4 5 6 7 8 9 10 20 30 40 50];
@@ -63,7 +61,7 @@ theta_e = thetaEspline(m);
 
 % plot
 
-if debugPlot
+if debug
     figure(2)
     semilogx(expRatio2,thetaNspline,'r-');
     hold on;

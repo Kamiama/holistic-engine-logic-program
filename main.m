@@ -61,12 +61,15 @@ file_name = strcat(run_description, write_date); % output file name
     enableREFPROP = 1;
     enableFigures = 1;
     enableDebug = 1;
-    throttleAnalysis = 1;
+    throttleAnalysis = 0;
     if enableREFPROP
         sizeFluids = 0;
         sizeInjector = 0;
         sizeCooling = 0;
     end
+
+    resolution_contour = 50;
+    resolution_throttle = 15;
 
 %% Parse Variables & Define Constants
 % parse & convert input properties
@@ -213,13 +216,13 @@ CEA_input_name = append(CEA_name_prefix, '.inp');
 CEA_output_name = append(CEA_name_prefix, '.out');
 
 % run CEA
-[cea_c_star, cea_isp, exp_ratio, M, gamma, ~, T, ~, mu, ~, ~, k, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
+[cea_c_star, cea_isp, exp_ratio, M, gamma, ~, T, ~, mu, ~, ~, k, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 0, 1, 1, CEA_input_name);
 
 %% Intermediate Calculations
 
 % correct cea values & solve for specific impulse
 gamma = gamma(1); % chamber gamma
-c_f = (sqrt(((2*gamma^2)/(gamma-1)) * (2/(gamma+1))^((gamma+1)/(gamma-1)) * (1-(P_e/P_c)^((gamma-1)/gamma))) + (P_e-P_a)*exp_ratio/P_c) * eff_c_f; % thrust coefficient
+c_f = (sqrt(((2*gamma^2)/(gamma-1)) * (2/(gamma+1))^((gamma+1)/(gamma-1)) * (1-(P_e/P_c)^((gamma-1)/gamma))) + (P_e-P_a)*exp_ratio/P_c) * eff_c_f; % thrust coefficient [N/A]
 c_star = cea_c_star * eff_c_star;              % expected c* [ft/s]
 isp = c_star * c_f / g;                        % specific impulse [sec]
 c = isp * g;                                   % effective exhaust velocity [ft/s]
@@ -290,7 +293,7 @@ elseif converging_method == "auto"
     A_c = A_t * con_ratio;                              % chamber area [in^2]
 
 % throw an error if no converging method is selected
-else
+elsetes
     error("No converging method selected.")
 end
 
@@ -300,11 +303,11 @@ R_t = D_t / 2;            % throat radius [in]
 R_e = D_e / 2;            % exit radius [in]
 
 %% Generate Nozzle Contour
-[x_contour, r_contour, L_c, L_total] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size);
+[x_contour, r_contour, L_c, L_total, L_seg] = engineContour(geometry_type, bell_pct, R_t, exp_ratio, con_ratio, conv_angle, conical_half_angle, L_crude_throat, L_star, bar_size, resolution_contour);
 
 %% Throttle Analysis
 if throttleAnalysis
-    throttle(min_throttle_pct, F, eff_c_star, eff_c_f, P_c, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name);
+    throttle(min_throttle_pct, F, eff_c_star, eff_c_f, P_c, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name, resolution_throttle);
 end
 
 %% Cooling Calculations
@@ -316,7 +319,7 @@ if sizeCooling
 
     % size regenerative cooling
     if cooling_type == "regen"
-        coolingTemp(x_contour, r_contour, R_t, nozzle_regen_pct, m_dot, P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF);
+        sizeRegen(x_contour, r_contour, L_seg, R_t, nozzle_regen_pct, m_dot, P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF);
 
     % size ablative cooling
     elseif cooling_type == "ablative"
@@ -400,8 +403,14 @@ disp(['            Fuel Density [lb/in^3]: ' num2str(rho_FUEL)]);
 disp(['        Oxidizer Density [lb/in^3]: ' num2str(rho_OX)]);
 fprintf('-------- Propellant Properties ------\n')
 
-%% Output Results
-
+% subsonic_area_ratios = (pi * r_contour(x_contour < 0) .^ 2) / A_t;
+% supersonic_area_ratios = (pi * r_contour(x_contour > 0) .^ 2) / A_t;
+% 
+% [c_star, ~, ~, M, gamma, P, T, rho, mu, Pr_gas, Mw, ~, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, subsonic_area_ratios, supersonic_area_ratios, 0, 1, 1, CEA_input_name);
+% 
+% 
+% %% Output Results
+% 
 % figure(2)
 % hold on
 % 
@@ -436,5 +445,5 @@ fprintf('-------- Propellant Properties ------\n')
 % ylabel('Inches Y')
 % grid on
 % axis([x_contour(1) x_contour(end) 0 x_contour(end)-x_contour(1)])
-
-hold off
+% 
+% hold off

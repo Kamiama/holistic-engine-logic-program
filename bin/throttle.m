@@ -3,7 +3,7 @@
 % First Created: 3/28/2023
 % Last Updated: 4/10/2023
 
-function [] = throttle(min_throttle_pct, F_max, eff_c_star, eff_c_f, P_c_max, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name)
+function [] = throttle(min_throttle_pct, F_max, eff_c_star, eff_c_f, P_c_max, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name, resolution)
 
 %{ 
 Description: Takes throttle percent as an input and performs analysis to
@@ -64,7 +64,6 @@ addpath(cea_path);
 g = 32.174; % gravitational acceleration [ft/s^2]
 
 P_sep = P_a * .4; % flow separation condition
-resolution = 5;
 debug = 0;
 
 % initialize throttle range and desired variable matrices
@@ -81,7 +80,7 @@ rel_isps = zeros(1, resolution);
 %% Get Parameters at Full Throttle
 
 % run CEA at full throttle conditions (F_max, P_c_max)
-[cea_c_star, cea_isp, exp_ratio_cea, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c_max, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
+[cea_c_star, cea_isp, exp_ratio_cea, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c_max, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 0, 1, 1, CEA_input_name);
 
 % extract CEA values
 c_star_max = cea_c_star * eff_c_star;

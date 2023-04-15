@@ -1,9 +1,0 @@
-problem rocket eq
-    p(psi) = 300
-    o/f = 1.58
-    pip = 20.4082
-reac
-    fuel = C3H8O,2propanol t(K) = 293.150
-    ox = O2(L)
-outp trans
-end
