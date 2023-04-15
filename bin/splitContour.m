@@ -29,7 +29,7 @@ x_interp = interp1(cumulative_distance, x_contour, 'linear', 'pp');
 r_interp = interp1(cumulative_distance, r_contour, 'linear', 'pp');
 
 % calculate the new cumulative distances for the equally spaced points
-L_seg = cumulative_distance(end) / (num_points - 1);
+L_seg = cumulative_distance(end) / (num_points - 1)
 new_cumulative_distance = 0:L_seg:cumulative_distance(end);
 
 % interpolate the new x and r points using the new cumulative distances

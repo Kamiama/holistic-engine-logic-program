@@ -68,7 +68,7 @@ file_name = strcat(run_description, write_date); % output file name
         sizeCooling = 0;
     end
 
-    resolution_contour = 50;
+    resolution_contour = 300;
     resolution_throttle = 15;
 
 %% Parse Variables & Define Constants
