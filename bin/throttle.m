@@ -124,7 +124,7 @@ for P_c = P_cs
     % loop
     while abs(Fs(index) - Fs_temp(index)) > tolerance && iter < max_iter
         % run CEA for given P_c_new
-        [cea_c_star, ~, ~, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c_guess, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, CEA_input_name, 0, 1);
+        [cea_c_star, ~, ~, ~, gamma, ~, ~, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 0, 1, 1, CEA_input_name);
         
         % extract CEA values
         gamma = gamma(1);

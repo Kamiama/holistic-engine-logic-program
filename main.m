@@ -61,14 +61,14 @@ file_name = strcat(run_description, write_date); % output file name
     enableREFPROP = 1;
     enableFigures = 1;
     enableDebug = 1;
-    throttleAnalysis = 0;
+    throttleAnalysis = 1;
     if enableREFPROP
         sizeFluids = 0;
         sizeInjector = 0;
         sizeCooling = 0;
     end
 
-    resolution_contour = 300;
+    resolution_contour = 50;
     resolution_throttle = 15;
 
 %% Parse Variables & Define Constants
@@ -222,6 +222,7 @@ CEA_output_name = append(CEA_name_prefix, '.out');
 
 % correct cea values & solve for specific impulse
 gamma = gamma(1); % chamber gamma
+exp_ratio = 1/(((gamma+1)/2)^(1/(gamma-1)) * (P_e/P_c)^(1/gamma) * ((gamma+1)/(gamma-1)*(1-(P_e/P_c)^((gamma-1)/gamma)))^.5);
 c_f = (sqrt(((2*gamma^2)/(gamma-1)) * (2/(gamma+1))^((gamma+1)/(gamma-1)) * (1-(P_e/P_c)^((gamma-1)/gamma))) + (P_e-P_a)*exp_ratio/P_c) * eff_c_f; % thrust coefficient [N/A]
 c_star = cea_c_star * eff_c_star;              % expected c* [ft/s]
 isp = c_star * c_f / g;                        % specific impulse [sec]

@@ -17,6 +17,7 @@ Outputs:
 %}
 
 debug = 0;
+L_seg = 0;
 
 % interpolate initial and exit rao angles
 [theta_i, theta_e] = raoAngleInterpolation(exp_ratio, debug); 
