@@ -1,0 +1,9 @@
+problem rocket eq fr
+    p(bar) = 11.73
+    o/f = 6.7
+    sup = 2.7466, 2.7613, 2.776, 2.7908, 2.8056, 2.8205
+reac
+    fuel = H2(L) t(K) = 30.000
+    ox = O2(L) t(K) = 96.700
+outp trans
+end

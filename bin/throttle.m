@@ -63,7 +63,6 @@ addpath(cea_path);
 
 g = 32.174; % gravitational acceleration [ft/s^2]
 
-P_sep = P_a * .4; % flow separation condition
 debug = 0;
 
 % initialize throttle range and desired variable matrices
@@ -72,6 +71,7 @@ Fs = F_max .* throttle_pct; % thrust matrix with correct linear correlation
 Fs_temp = zeros(1, resolution); % temporary thrust matrix for iterative solving
 P_cs = P_c_max .* throttle_pct; % initial chamber pressure matrix with initial assumption of linear correlation
 P_es = zeros(1, resolution);
+P_seps = zeros(1, resolution);
 m_dots = zeros(1, resolution);
 isps = zeros(1, resolution);
 rel_isps = zeros(1, resolution);
@@ -110,7 +110,7 @@ isp_max = c_star_max * c_f_max / g;
 % initialize loop variables
 index = 1;
 %F = F_max;
-tolerance = .02;
+tolerance = .01;
 max_iter = 1000;
 
 % iteratively loop through entire P_c matrix
@@ -162,10 +162,13 @@ for P_c = P_cs
     rel_isps(index) = isps(index) / isp_max;
     P_cs(index) = P_c_guess;
     P_es(index) = P_e;
+    P_seps(index) = 2 / 3 * (P_c_guess / P_a) ^ -.2 * P_a; % flow separation condition
 
     % increase matrix index
     index = index + 1;
 end
+
+
 
 % Calculate Lines of Best Fit
 
@@ -193,7 +196,7 @@ disp(['              Minimum Throttle (%): ' num2str(min_throttle_pct)]);
 disp(['              Minimum Thrust (lbf): ' num2str(min(Fs))]);
 disp(['    Minimum Chamber Pressure (psi): ' num2str(min(P_cs))]);
 disp(['       Minimum Exit Pressure (psi): ' num2str(min(P_es))]);
-disp(['   Flow Separation Condition (psi): ' num2str(P_sep)]);
+disp(['   Flow Separation Condition (psi): ' num2str(P_seps(1))]);
 disp(['    Minimum Mass Flow Rate (lbm/s): ' num2str(min(m_dots))]);
 disp(['                 Minimum Isp (sec): ' num2str(min(isps))]);
 fprintf('\n           Thrust line of best fit: \n')
@@ -217,6 +220,7 @@ title('Chamber Pressure vs Throttle')
 xlabel('Throttle %')
 ylabel('Chamber Pressure [psi]')
 axis([throttle_pct(end) throttle_pct(1) P_cs(end) P_cs(1)])
+set(gca, 'FontSize', 14)
 grid on
 
 % mass flow rate plot
@@ -226,22 +230,26 @@ title('Mass Flow Rate vs Throttle')
 xlabel('Throttle %')
 ylabel('Mass Flow Rate [lb/s]')
 axis([throttle_pct(end) throttle_pct(1) m_dots(end) m_dots(1)])
+set(gca, 'FontSize', 14)
 grid on
 
 % exit pressure plot
 subplot(2,2,3)
+hold on
 plot(throttle_pct, P_es, 'blue');
+plot(throttle_pct, P_seps, 'red', 'LineStyle', '--');
 title('Exit Pressure vs Throttle')
 xlabel('Throttle %')
 ylabel('Exit Pressure [psi]')
-if P_es(end) > P_sep
-    axis([throttle_pct(end) throttle_pct(1) P_sep-1 P_es(1)])
-else
-    axis([throttle_pct(end) throttle_pct(1) P_es(end) P_es(1)])
-end
+% if P_es(end) > P_sep
+%     axis([throttle_pct(end) throttle_pct(1) P_sep-1 P_es(1)])
+% else
+%     axis([throttle_pct(end) throttle_pct(1) P_es(end) P_es(1)])
+% end
 % flow separation line
-line([-100 100],[P_sep P_sep], 'Color', 'red', 'LineStyle', '--')
+% line([-100 100],[P_sep P_sep], 'Color', 'red', 'LineStyle', '--')
 legend('', 'Flow Separation Condition', 'Location', 'Northwest')
+set(gca, 'FontSize', 14)
 grid on
 
 % isp plot
@@ -258,8 +266,9 @@ set(gca, 'XLim', [throttle_pct(end), throttle_pct(1)], 'YLim', [rel_isps(end), r
 yyaxis right
 isp_axis = round(linspace(min(flip(rel_isps .* isp_max)), max(flip(rel_isps .* isp_max)), 5) .* 10) ./ 10;
 set(gca,'YTick', isp_axis, 'YLim', [min(isp_axis), max(isp_axis)], 'Ycolor', 'k')
+set(gca, 'FontSize', 14)
 ylabel('Isp [sec]')
 
-sgtitle("Throttled Chamber Performance: " + F_max + "lbf, " + OF + " OF ratio, " + min_throttle_pct * 100 + "% min throttle")
+%sgtitle("Throttled Chamber Performance: " + F_max + "lbf, " + OF + " OF ratio, " + min_throttle_pct * 100 + "% min throttle")
 
 

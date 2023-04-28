@@ -68,9 +68,9 @@ load("r_contour.mat");
 load("x_contour.mat");
 r_contour = r_contour * u.IN2M;
 x_contour = x_contour * u.IN2M;
-R_t = .81; % [in]
+R_t = .706; % [in]
 P_c = 275; % [psi]
-P_e = 18.; % [psi]
+P_e = 18.5; % [psi]
 fuel = 'C3H8O,2propanol';
 fuel_weight = 0;
 fuel_temp = 273.15; % [K]
@@ -82,7 +82,7 @@ L_seg = 0.0283; % [in]
 coolant = 'Water';
 
 inlet_temperature = 293.16;
-inlet_pressure = 700 * u.PSI2PA; % [Pa]
+inlet_pressure = 500 * u.PSI2PA; % [Pa]
 
 %% Initialize Variables
 
@@ -110,22 +110,22 @@ CEA_input_name = 'AAAAAA';
         A_local = pi * (R_t) ^ 2; % local cross sectional areas of engine
 
     % channel geometry
-        t_w = 0.001;        % [m]
-        h_c = 0.0015;    % [m]
-        w_c = 0.0015;     % [m]
+        t_w = 0.00035;        % [m]
+        h_l = 0.0014;    % [m]
+        w_c = 0.0016;     % [m]
         length = L_seg * u.IN2M;      % [m], arbitrary for now
-        hydraulic_D = 4 * h_c * w_c / (2 * (h_c + w_c)); % [m]
+        hydraulic_D = 4 * h_l * w_c / (2 * (h_l + w_c)); % [m]
         wall_area = w_c * length; % [m^2]
-        A = w_c * h_c; % channel area [m^2]
+        A = w_c * h_l; % channel area [m^2]
    
     % working fluid properties
         
 
     % engine properties
-        m_dot = 12 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
+        m_dot = 10 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 
     % wall material properties
-        k_w = 110; % Thermal Conductivity of Wall [W/m-K]
+        k_w = 400; % Thermal Conductivity of Wall [W/m-K]
         E = 70E9; % in Pa
         CTE = 27E-6; % in 1/K
         nu = 0.3; 
@@ -138,7 +138,9 @@ CEA_input_name = 'AAAAAA';
 % uses the incorrect assumption of nozzle inlet coolant properties
 
 % Step 1: Prescribe initial properties
-[c_star, ~, ~, M, gamma, P_g, T_g, ~, mu_g, Pr_g, ~, ~, ~, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 1, 0, 0, CEA_input_name);
+[~, ~, ~, M_0, ~, P_0, T_0, rho_0, mu_0, ~, ~, ~, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 1, 0, 0, CEA_input_name); % run at position index 1 (chamber)
+[c_star, ~, ~, M, gamma, P_g, T_g, rho_g, mu_g, Pr_g, ~, k_g, son_g, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); % run at position index 2 (throat)
+V_g = son_g * M; % assign gas velocity
 
 % Steps 2 & 3: Set channel inlet properties
 num_channels = 40; % pi * (D_t + 0.8 * (D_t + 2 * t_w)) / (D_t + 2 * t_w); % number of Channels (EQ 6.30) (Change the coefficient later)
@@ -163,8 +165,27 @@ counter = 0; % counter for loop
     % start loop to converge on wall temperature
     while ~(converged)
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
+
+        % bartz equation via Huzel & Huang
         sigma = (.5 * T_wg / T_g * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_g / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        h_g_hh = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_g / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas side film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        
+        % bartz equation via Heister (original 1957 equation)
+        rho_am = 0.5 * (rho_0 + rho_g); % arithmetic mean density
+        T_g_am = 0.5 * (T_wg + T_g); % arithmetic mean temperature
+        T_0 = T_g * (1 + (gamma - 1) / 2 * M ^ 2); % stagnation temperature
+    
+        w = log(mu_0 / mu_g) / log(T_0 / T_g);
+        mu_am_0 = (T_g_am / T_0) ^ w; % viscosity ratio formulation
+    
+%         a = 1.0; b = 10.0;
+%         sigma = 1 - exp(-a * r^2 / r_throat^2) / b; % bartz correction factor
+        sigma = 1;
+
+        Re_g = rho_g * V_g * D_t / mu_g;
+        h_g = sigma * 0.026 * k_g / D_t * (Re_g ^ 0.8) * (Pr_g ^ 0.4) * (rho_am / rho_g) ^ 0.8 * (mu_am_0) ^ 0.2; % gas side heat transfer coefficient [W/m2K] - bartz equation (Heister EQ 6.13).
+
+        % calculate gas side convective heat flux
         r = Pr_g ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g * (1 + (gamma - 1) / 2 * r * M ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g = h_g * (T_r - T_wg); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -180,8 +201,8 @@ counter = 0; % counter for loop
             
         Re_l = (4 * m_dot_CHANNEL) / (pi * hydraulic_D * mu_lb); % reynolds number for channel flow [] ALEX CITE SOURCE
         Pr_l = (cp_l * mu_lb) / k_l; % prantl number [] ALEX CITE SOURCE
-        Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl / T_l) ^ -.3; % nusselt number [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19).
-        h_l = (Nu_l * k_l) / hydraulic_D; % liquid film coefficient [W/m^2-K] ALEX CITE SOURCE
+        Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl / T_l) ^ -.3; % calculate nusselt number via the Dittus-Boelter correlation [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19).
+        h_l = (Nu_l * k_l) / hydraulic_D; % liquid film coefficient [W/m^2-K]
         
         % Step 8: Calculate liquid-side convective heat flux
         qdot_l = h_l * (T_wl - T_l); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
@@ -275,6 +296,23 @@ for i = 1:steps % where i is the position along the chamber (1 = nozzle, end = i
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
         sigma = (.5 * T_wg(i) / T_g(i) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
         h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_g(i) / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        
+        % bartz equation via Heister (original 1957 equation)
+        rho_am = 0.5 * (rho_0 + rho_g); % arithmetic mean density
+        T_g_am = 0.5 * (T_wg + T_g); % arithmetic mean temperature
+        T_0 = T_g * (1 + (gamma - 1) / 2 * M ^ 2); % stagnation temperature
+    
+        w = log(mu_0 / mu_g) / log(T_0 / T_g);
+        mu_am_0 = (T_g_am / T_0) ^ w; % viscosity ratio formulation
+    
+%         a = 1.0; b = 10.0;
+%         sigma = 1 - exp(-a * r^2 / r_throat^2) / b; % bartz correction factor
+        sigma = 1;
+
+        Re_g = rho_g * V_g * D_t / mu_g;
+        h_g = sigma * 0.026 * k_g / D_t * (Re_g ^ 0.8) * (Pr_g ^ 0.4) * (rho_am / rho_g) ^ 0.8 * (mu_am_0) ^ 0.2; % gas side heat transfer coefficient [W/m2K] - bartz equation (Heister EQ 6.13).
+    
+        
         r = Pr_g(i) ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g(i) * (1 + (gamma(i) - 1) / 2 * r * M(i) ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -334,57 +372,57 @@ for i = 1:steps % where i is the position along the chamber (1 = nozzle, end = i
         end
     end
 end
-
-% PLOT OUTPUTS
-
-figure('Name', 'Temperature Plot');
-hold on;
-
-% temperature plot
-% subplot(2,1,1)
-yyaxis left
-plot(x_contour .* 1000, flip(T_wg), 'red', 'LineStyle', '-');
-plot(x_contour .* 1000, flip(T_wl), 'magenta', 'LineStyle', '-');
-plot(x_contour .* 1000, flip(T_l), 'blue', 'LineStyle', '-');
-ylabel('Temperature [K]')
-set(gca, 'Ycolor', 'k')
-grid on
-
-yyaxis right
-plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
-ylabel('Radius [mm]')
-set(gca, 'Ycolor', 'k')
-axis equal;
-
-legend('T_w_g', 'T_w_l', 'T_l', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
-title('Temperature Distribution')
-xlabel('Location [mm]')
-
-figure('Name', 'Heat Flux Plot');
-hold on;
-
-% heat flux plot
-%subplot(2,1,2)
-yyaxis left
-plot(x_contour .* 1000, flip(qdot_g) ./ 1000, 'red', 'LineStyle', '-');
-ylabel('Heat Flux [kW/m^2]')
-set(gca, 'Ycolor', 'k')
-grid on
-
-yyaxis right
-plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
-ylabel('Radius [mm]')
-set(gca, 'Ycolor', 'k')
-axis equal;
-
-legend('Convective Heat Flux', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
-title('Heat Flux Distribution')
-xlabel('Location [mm]')
+% 
+% % PLOT OUTPUTS
+% 
+% figure('Name', 'Temperature Plot');
+% hold on;
+% 
+% % temperature plot
+% % subplot(2,1,1)
+% yyaxis left
+% plot(x_contour .* 1000, flip(T_wg), 'red', 'LineStyle', '-');
+% plot(x_contour .* 1000, flip(T_wl), 'magenta', 'LineStyle', '-');
+% plot(x_contour .* 1000, flip(T_l), 'blue', 'LineStyle', '-');
+% ylabel('Temperature [K]')
+% set(gca, 'Ycolor', 'k')
+% grid on
+% 
+% yyaxis right
+% plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
+% ylabel('Radius [mm]')
+% set(gca, 'Ycolor', 'k')
+% axis equal;
+% 
+% legend('T_w_g', 'T_w_l', 'T_l', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
+% title('Temperature Distribution')
+% xlabel('Location [mm]')
+% 
+% figure('Name', 'Heat Flux Plot');
+% hold on;
+% 
+% % heat flux plot
+% %subplot(2,1,2)
+% yyaxis left
+% plot(x_contour .* 1000, flip(qdot_g) ./ 1000, 'red', 'LineStyle', '-');
+% ylabel('Heat Flux [kW/m^2]')
+% set(gca, 'Ycolor', 'k')
+% grid on
+% 
+% yyaxis right
+% plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
+% ylabel('Radius [mm]')
+% set(gca, 'Ycolor', 'k')
+% axis equal;
+% 
+% legend('Convective Heat Flux', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
+% title('Heat Flux Distribution')
+% xlabel('Location [mm]')
     
-        %Step 12: Structural Analysis Checks
-        St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
-        Sl = E*a*(Twl-fuel_temp); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.
-        Sc = 4*Et*Ec*t_w/((((Et)^(1/2))*((Ec)^(1/2))^2)*(3*(1-v^2)*tube_radius)); %Critical Stress Buckling (Huzel and Huang, Eq 4-29, pg 93)
+%         %Step 12: Structural Analysis Checks
+%         St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
+%         Sl = E*a*(Twl-fuel_temp); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.
+%         Sc = 4*Et*Ec*t_w/((((Et)^(1/2))*((Ec)^(1/2))^2)*(3*(1-v^2)*tube_radius)); %Critical Stress Buckling (Huzel and Huang, Eq 4-29, pg 93)
 
 %% THERMAL FEA
 if plots
@@ -392,7 +430,7 @@ if plots
     M = 150;
     N = 150;
     R1 = R_t; % inner radius 
-    R2 = R_t + h_c * 4;  % outer radius
+    R2 = R_t + h_l * 4;  % outer radius
     nR = linspace(R1,R2,M);
     nT = linspace(-pi/num_channels, pi/num_channels + w_c / R_t, N);
     [R, T_g] = meshgrid(nR,nT) ;
@@ -405,7 +443,7 @@ if plots
     M = 50;
     N = 50;
     R1 = R_t + t_w; % inner radius 
-    R2 = R_t + t_w + h_c;  % outer radius
+    R2 = R_t + t_w + h_l;  % outer radius
     x = linspace(R1,R2,M);
     y = linspace(-pi/num_channels - w_c / R_t / 2, -pi/num_channels + w_c / R_t / 2, N);
     [R, T_g] = meshgrid(x, y);
@@ -422,7 +460,7 @@ if plots
     M = 50;
     N = 50;
     R1 = R_t + t_w; % inner radius 
-    R2 = R_t + t_w + h_c;  % outer radius
+    R2 = R_t + t_w + h_l;  % outer radius
     x = linspace(R1,R2,M);
     y = linspace(pi/num_channels - w_c / R_t / 2, pi/num_channels + w_c / R_t / 2, N);
     [R, T_g] = meshgrid(x, y);
@@ -453,7 +491,7 @@ if plots
     
     pdegplot(model,"FaceLabels","on","FaceAlpha",0.5)
     
-    generateMesh(model,"Hmax",h_c/12);
+    generateMesh(model,"Hmax",h_l/12);
     % figure
     % pdemesh(model)
     

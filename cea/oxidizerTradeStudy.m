@@ -25,7 +25,7 @@ oxidizer_temp = [90.19, 273.15, 273.15];   % fuel temperature [K]
 
 % performance parameters
 P_c = 275;            % chamber pressure [psi]
-P_e = 18.5;           % exit pressure [psi]
+P_e = 14.7;           % exit pressure [psi]
 
 min_value_OF = .5;
 max_value_OF = 7;
@@ -69,7 +69,7 @@ end
 
 xlabel('Mixture Ratio')
 ylabel('Ideal Isp (sec)')
-set(gca, 'XLim', [min_value_OF, max_value_OF])
+set(gca, 'XLim', [min_value_OF, max_value_OF], 'FontSize', 14)
 grid on
 
-title("Propellant Performance vs Mixture Ratio: " + P_c + " psi P_c, " + P_e + " psi P_e")
+% title("Propellant Performance vs Mixture Ratio: " + P_c + " psi P_c, " + P_e + " psi P_e")

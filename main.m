@@ -69,7 +69,7 @@ file_name = strcat(run_description, write_date); % output file name
     end
 
     resolution_contour = 50;
-    resolution_throttle = 15;
+    resolution_throttle = 14;
 
 %% Parse Variables & Define Constants
 % parse & convert input properties

@@ -1,0 +1,264 @@
+
+ *******************************************************************************
+
+         NASA-GLENN CHEMICAL EQUILIBRIUM PROGRAM CEA2, MAY 21, 2004
+                   BY  BONNIE MCBRIDE AND SANFORD GORDON
+      REFS: NASA RP-1311, PART I, 1994 AND NASA RP-1311, PART II, 1996
+
+ *******************************************************************************
+
+
+
+ problem rocket eq fr
+     p(bar) = 11.73
+     o/f = 6.7
+     sup = 1.005, 1.0063, 1.0079, 1.0096, 1.0114, 1.0135
+ reac
+     fuel = H2(L) t(K) = 30.000
+     ox = O2(L) t(K) = 96.700
+ outp trans
+ end
+
+ OPTIONS: TP=F  HP=F  SP=F  TV=F  UV=F  SV=F  DETN=F  SHOCK=F  REFL=F  INCD=F
+ RKT=T  FROZ=T  EQL=T  IONS=F  SIUNIT=T  DEBUGF=F  SHKDBG=F  DETDBG=F  TRNSPT=T
+
+ TRACE= 0.00E+00  S/R= 0.000000E+00  H/R= 0.000000E+00  U/R= 0.000000E+00
+
+ Pc,BAR =    11.730000
+
+ Pc/P =
+
+ SUBSONIC AREA RATIOS =
+
+ SUPERSONIC AREA RATIOS =     1.0050     1.0063     1.0079     1.0096     1.0114
+     1.0135
+
+ NFZ=  1  Mdot/Ac= 0.000000E+00  Ac/At= 0.000000E+00
+
+ NOTE! REACTANT H2(L)          HAS BEEN DEFINED FOR TEMPERATURE   20.27K ONLY.
+ YOUR TEMPERATURE ASSIGNMENT   30.00 IS NOT = BUT <10 K FROM THIS VALUE. (REACT)
+
+ WARNING!!  AMOUNT MISSING FOR REACTANT  1.
+ PROGRAM SETS WEIGHT PERCENT = 100. (REACT)
+
+ NOTE! REACTANT O2(L)          HAS BEEN DEFINED FOR TEMPERATURE   90.17K ONLY.
+ YOUR TEMPERATURE ASSIGNMENT   96.70 IS NOT = BUT <10 K FROM THIS VALUE. (REACT)
+
+ WARNING!!  AMOUNT MISSING FOR REACTANT  2.
+ PROGRAM SETS WEIGHT PERCENT = 100. (REACT)
+
+    REACTANT          WT.FRAC   (ENERGY/R),K   TEMP,K  DENSITY
+        EXPLODED FORMULA
+ F: H2(L)            1.000000  -0.108389E+04    20.27  0.0000
+          H  2.00000
+ O: O2(L)            1.000000  -0.156101E+04    90.17  0.0000
+          O  2.00000
+
+  SPECIES BEING CONSIDERED IN THIS SYSTEM
+ (CONDENSED PHASE MAY HAVE NAME LISTED SEVERAL TIMES)
+  LAST thermo.inp UPDATE:    9/09/04
+
+  g 6/97  *H               g 4/02  HO2              tpis78  *H2            
+  g 8/89  H2O              g 6/99  H2O2             g 5/97  *O             
+  g 4/02  *OH              tpis89  *O2              g 8/01  O3             
+  g11/99  H2O(cr)          g 8/01  H2O(L)           g 8/01  H2O(L)         
+
+ SPECIES WITH TRANSPORT PROPERTIES
+
+        PURE SPECIES
+
+  H                 H2                H2O               O               
+  OH                O2              
+
+     BINARY INTERACTIONS
+
+     H               H2              
+     H               O               
+     H2              H2O             
+     H2              O2              
+     H2O             O2              
+     O               O2              
+
+
+ O/F =   6.700000
+
+                       EFFECTIVE FUEL     EFFECTIVE OXIDANT        MIXTURE
+ ENTHALPY                  h(2)/R              h(1)/R               h0/R
+ (KG-MOL)(K)/KG       -0.53767500E+03     -0.48783267E+02     -0.11227570E+03
+
+ KG-FORM.WT./KG             bi(2)               bi(1)               b0i
+  *H                   0.99212255E+00      0.00000000E+00      0.12884708E+00
+  *O                   0.00000000E+00      0.62502344E-01      0.54385156E-01
+
+ POINT ITN      T            H           O 
+   1    9    3326.707     -10.197     -16.247
+ Pinf/Pt = 1.725231
+   2    3    3177.948     -10.404     -16.506
+ Pinf/Pt = 1.723576
+   2    2    3178.203     -10.404     -16.506
+   3    3    3154.954     -10.437     -16.549
+   3    2    3156.846     -10.435     -16.546
+   4    2    3152.092     -10.441     -16.555
+   4    2    3154.123     -10.438     -16.551
+   5    2    3148.942     -10.446     -16.560
+   5    2    3151.108     -10.443     -16.556
+   6    2    3145.921     -10.450     -16.566
+   6    2    3148.198     -10.447     -16.562
+   6    2    3148.268     -10.447     -16.562
+   7    2    3142.992     -10.455     -16.572
+   7    2    3145.361     -10.451     -16.567
+   7    2    3145.430     -10.451     -16.567
+   8    2    3139.844     -10.459     -16.578
+   8    2    3142.297     -10.456     -16.573
+   8    2    3142.363     -10.456     -16.573
+
+
+
+
+
+              THEORETICAL ROCKET PERFORMANCE ASSUMING EQUILIBRIUM
+
+           COMPOSITION DURING EXPANSION FROM INFINITE AREA COMBUSTOR
+
+ Pin =   170.1 PSIA
+ CASE =                
+
+             REACTANT                    WT FRACTION      ENERGY      TEMP
+                                          (SEE NOTE)     KJ/KG-MOL      K  
+ FUEL        H2(L)                        1.0000000     -9012.000     20.270
+ OXIDANT     O2(L)                        1.0000000    -12979.000     90.170
+
+ O/F=    6.70000  %FUEL= 12.987013  R,EQ.RATIO= 1.184580  PHI,EQ.RATIO= 1.184580
+
+                 CHAMBER   THROAT     EXIT     EXIT     EXIT     EXIT     EXIT     EXIT
+ Pinf/P            1.0000   1.7236   1.8686   1.8880   1.9098   1.9305   1.9515   1.9745
+ P, BAR            11.730   6.8056   6.2775   6.2129   6.1421   6.0761   6.0107   5.9408
+ T, K             3326.71  3178.20  3156.85  3154.12  3151.11  3148.27  3145.43  3142.36
+ RHO, KG/CU M    6.0027-1 3.6967-1 3.4398-1 3.4083-1 3.3736-1 3.3412-1 3.3092-1 3.2748-1
+ H, KJ/KG         -933.52 -1966.15 -2114.21 -2133.08 -2153.96 -2173.63 -2193.28 -2214.52
+ U, KJ/KG        -2887.62 -3807.16 -3939.16 -3955.98 -3974.60 -3992.14 -4009.67 -4028.60
+ G, KJ/KG        -60782.5 -59143.5 -58907.3 -58877.2 -58843.8 -58812.4 -58781.0 -58747.1
+ S, KJ/(KG)(K)    17.9905  17.9905  17.9905  17.9905  17.9905  17.9905  17.9905  17.9905
+
+ M, (1/n)          14.155   14.354   14.383   14.386   14.391   14.394   14.398   14.402
+ (dLV/dLP)t      -1.04668 -1.04060 -1.03969 -1.03958 -1.03945 -1.03933 -1.03921 -1.03908
+ (dLV/dLT)p        1.8632   1.7866   1.7744   1.7728   1.7710   1.7694   1.7677   1.7659
+ Cp, KJ/(KG)(K)   12.9713  12.3934  12.2941  12.2811  12.2667  12.2530  12.2392  12.2243
+ GAMMAs            1.1243   1.1218   1.1215   1.1215   1.1214   1.1214   1.1214   1.1213
+ SON VEL,M/SEC     1482.2   1437.1   1430.6   1429.8   1428.9   1428.0   1427.2   1426.2
+ MACH NUMBER        0.000    1.000    1.074    1.083    1.093    1.103    1.112    1.122
+
+ TRANSPORT PROPERTIES (GASES ONLY)
+   CONDUCTIVITY IN UNITS OF MILLIWATTS/(CM)(K)
+
+ VISC,MILLIPOISE   1.0408   1.0060   1.0010   1.0003  0.99961  0.99894  0.99826  0.99754
+
+  WITH EQUILIBRIUM REACTIONS
+
+ Cp, KJ/(KG)(K)   12.9713  12.3934  12.2941  12.2811  12.2667  12.2530  12.2392  12.2243
+ CONDUCTIVITY     25.9572  23.8289  23.4957  23.4527  23.4050  23.3599  23.3148  23.2658
+ PRANDTL NUMBER    0.5201   0.5232   0.5238   0.5238   0.5239   0.5240   0.5240   0.5241
+
+  WITH FROZEN REACTIONS
+
+ Cp, KJ/(KG)(K)    3.5241   3.4986   3.4947   3.4942   3.4937   3.4931   3.4926   3.4920
+ CONDUCTIVITY      5.1593   4.9042   4.8674   4.8628   4.8576   4.8527   4.8478   4.8425
+ PRANDTL NUMBER    0.7109   0.7177   0.7187   0.7188   0.7189   0.7191   0.7192   0.7193
+
+ PERFORMANCE PARAMETERS
+
+ Ae/At                      1.0000   1.0050   1.0063   1.0079   1.0096   1.0114   1.0135
+ CSTAR, M/SEC               2208.0   2208.0   2208.0   2208.0   2208.0   2208.0   2208.0
+ CF                         0.6509   0.6960   0.7015   0.7076   0.7133   0.7189   0.7249
+ Ivac, M/SEC                2718.2   2724.3   2725.8   2727.7   2729.6   2731.6   2734.0
+ Isp, M/SEC                 1437.1   1536.7   1548.9   1562.3   1574.9   1587.3   1600.6
+
+
+ MOLE FRACTIONS
+
+ *H               0.05034  0.04402  0.04310  0.04298  0.04285  0.04273  0.04261  0.04247
+ HO2              0.00005  0.00003  0.00003  0.00003  0.00003  0.00003  0.00003  0.00003
+ *H2              0.19404  0.18749  0.18652  0.18640  0.18626  0.18613  0.18600  0.18586
+ H2O              0.65468  0.68254  0.68662  0.68714  0.68772  0.68826  0.68880  0.68939
+ H2O2             0.00001  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000
+ *O               0.01080  0.00850  0.00818  0.00814  0.00809  0.00805  0.00801  0.00796
+ *OH              0.07595  0.06531  0.06376  0.06356  0.06334  0.06313  0.06292  0.06270
+ *O2              0.01413  0.01210  0.01179  0.01175  0.01171  0.01167  0.01163  0.01158
+
+  * THERMODYNAMIC PROPERTIES FITTED TO 20000.K
+
+    PRODUCTS WHICH WERE CONSIDERED BUT WHOSE MOLE FRACTIONS
+    WERE LESS THAN 5.000000E-06 FOR ALL ASSIGNED CONDITIONS
+
+ O3              H2O(cr)         H2O(L)         
+
+ NOTE. WEIGHT FRACTION OF FUEL IN TOTAL FUELS AND OF OXIDANT IN TOTAL OXIDANTS
+
+
+
+
+
+           THEORETICAL ROCKET PERFORMANCE ASSUMING FROZEN COMPOSITION
+
+ Pin =   170.1 PSIA
+ CASE =                
+
+             REACTANT                    WT FRACTION      ENERGY      TEMP
+                                          (SEE NOTE)     KJ/KG-MOL      K  
+ FUEL        H2(L)                        1.0000000     -9012.000     20.270
+ OXIDANT     O2(L)                        1.0000000    -12979.000     90.170
+
+ O/F=    6.70000  %FUEL= 12.987013  R,EQ.RATIO= 1.184580  PHI,EQ.RATIO= 1.184580
+
+                 CHAMBER   THROAT     EXIT     EXIT     EXIT     EXIT     EXIT     EXIT
+ Pinf/P            1.0000   1.7741   1.9316   1.9528   1.9766   1.9999   2.0229   2.0480
+ P, BAR            11.730   6.6116   6.0726   6.0066   5.9344   5.8653   5.7987   5.7275
+ T, K             3326.71  3021.30  2978.05  2972.54  2966.43  2960.54  2954.80  2948.60
+ RHO, KG/CU M    6.0027-1 3.7255-1 3.4714-1 3.4401-1 3.4057-1 3.3728-1 3.3409-1 3.3069-1
+ H, KJ/KG         -933.52 -2001.73 -2151.58 -2170.66 -2191.78 -2212.15 -2231.99 -2253.41
+ U, KJ/KG        -2887.62 -3776.43 -3900.88 -3916.72 -3934.25 -3951.17 -3967.64 -3985.42
+ G, KJ/KG        -60782.5 -56356.2 -55728.1 -55648.0 -55559.2 -55473.6 -55390.2 -55300.1
+ S, KJ/(KG)(K)    17.9905  17.9905  17.9905  17.9905  17.9905  17.9905  17.9905  17.9905
+
+ M, (1/n)          14.155   14.155   14.155   14.155   14.155   14.155   14.155   14.155
+ Cp, KJ/(KG)(K)    3.5241   3.4695   3.4609   3.4598   3.4585   3.4573   3.4562   3.4549
+ GAMMAs            1.2000   1.2038   1.2044   1.2045   1.2046   1.2047   1.2048   1.2048
+ SON VEL,M/SEC     1531.3   1461.6   1451.5   1450.2   1448.8   1447.4   1446.0   1444.6
+ MACH NUMBER        0.000    1.000    1.075    1.085    1.095    1.105    1.114    1.125
+
+ TRANSPORT PROPERTIES (GASES ONLY)
+   CONDUCTIVITY IN UNITS OF MILLIWATTS/(CM)(K)
+
+ VISC,MILLIPOISE   1.0408  0.96978  0.95949  0.95817  0.95671  0.95530  0.95393  0.95244
+
+  WITH FROZEN REACTIONS
+
+ Cp, KJ/(KG)(K)    3.5241   3.4695   3.4609   3.4598   3.4585   3.4573   3.4562   3.4549
+ CONDUCTIVITY      5.1593   4.7246   4.6617   4.6537   4.6448   4.6362   4.6278   4.6187
+ PRANDTL NUMBER    0.7109   0.7122   0.7123   0.7123   0.7124   0.7124   0.7124   0.7124
+
+ PERFORMANCE PARAMETERS
+
+ Ae/At                      1.0000   1.0050   1.0063   1.0079   1.0096   1.0114   1.0135
+ CSTAR, M/SEC               2154.1   2154.1   2154.1   2154.1   2154.1   2154.1   2154.1
+ CF                         0.6785   0.7246   0.7302   0.7364   0.7424   0.7481   0.7542
+ Ivac, M/SEC                2675.8   2681.6   2683.0   2684.8   2686.6   2688.5   2690.8
+ Isp, M/SEC                 1461.6   1560.8   1573.0   1586.4   1599.1   1611.5   1624.7
+
+ MOLE FRACTIONS
+
+ *H              0.05034   HO2             0.00005   *H2             0.19404
+ H2O             0.65468   H2O2            0.00001   *O              0.01080
+ *OH             0.07595   *O2             0.01413
+
+  * THERMODYNAMIC PROPERTIES FITTED TO 20000.K
+
+    PRODUCTS WHICH WERE CONSIDERED BUT WHOSE MOLE FRACTIONS
+    WERE LESS THAN 5.000000E-06 FOR ALL ASSIGNED CONDITIONS
+
+ O3              H2O(cr)         H2O(L)         
+
+ NOTE. WEIGHT FRACTION OF FUEL IN TOTAL FUELS AND OF OXIDANT IN TOTAL OXIDANTS
+
+
+

@@ -3,7 +3,7 @@
 % First Created: 7/17/2022
 % Last Updated: 
 
-function [c_star, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, throat, imperial_inputs, imperial_ouputs, file_name)
+function [c_star, isp, exp_ratio, M, gamma, P, T, rho, mu, Pr, Mw, k, son, cp] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, sup, nozzle_pos, imperial_inputs, imperial_ouputs, file_name)
 
 %{ 
 Description: Sends engine performance and fuel properties to NASA CEA where
@@ -30,7 +30,7 @@ inp = containers.Map;
 
 %% CEA Inputs
 % run setup
-inp('type') = 'eq';              % sets the type of CEA calculation
+inp('type') = 'fr';              % sets the type of CEA calculation
 inp('file_name') = file_name;    % input/output file name
 
 % general parameters
@@ -48,7 +48,7 @@ elseif sub(1)
     inp('sub') = sub;            % subsonic area ratios
 elseif sup(1)
     inp('sup') = sup;            % supersonic area ratios
-elseif throat
+elseif nozzle_pos
     inp('sup') = 1;              % supersonic area ratios
 else
     inp('pip') = P_c / P_e;      % pressure ratios  
@@ -80,7 +80,7 @@ end
 % map. 'data' contains a single entry for each of the CEA calculation types
 % listed ('eq' and 'fr'). For instance, if only 'fr' is listed, then 'data'
 % will only contain a single entry under data('fr').
-data_eq = data('eq');
+data_eq = data('fr');
 
 %% Extract Outputs
 % Use keys(data_eq) or keys(data_fr) to see the contents of each map
@@ -125,12 +125,8 @@ else
     isp = isp(end);
     c_star = c_star(1);
 end
-if throat
-    if M(end) == 0
-        M = 1;
-    else
-        M = M(end);
-    end
+if nozzle_pos == 2
+    M = M(end);
     gamma = gamma(end);
     P = P(end);
     T = T(end);
@@ -141,5 +137,18 @@ if throat
     k = k(end);
     son = son(end);
     cp = cp(end);
+elseif nozzle_pos == 1
+    M = M(1);
+    gamma = gamma(1);
+    P = P(1);
+    T = T(1);
+    rho = rho(1);
+    mu = mu(1);
+    Pr = Pr(1);
+    Mw = Mw(1);
+    k = k(1);
+    son = son(1);
+    cp = cp(1);
 end
+
 exp_ratio = exp_ratio(end); % select expansion ratio

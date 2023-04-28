@@ -1,7 +1,7 @@
 problem rocket fr
-    p(psi) = 68.75
+    p(psi) = 109.96
     o/f = 1.3
-    pip = 11.4929
+    pip = 16.0066
 reac
     fuel = C3H8O,2propanol t(K) = 293.150 wt% = 100.000
     ox = O2(L) t(K) = 90.170
