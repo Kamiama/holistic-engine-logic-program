@@ -1,9 +1,10 @@
 problem rocket fr
-    p(psi) = 220
+    p(psi) = 230
     o/f = 1.3
-    sup = 1
+    pip = 15.6463
 reac
-    fuel = C3H8O,2propanol t(K) = 294.261
-    ox = O2(L) t(K) = 90.170
+    fuel = C2H5OH(L) wt% = 98.200
+    fuel = C8H18(L),isooct wt% = 1.800
+    ox = O2(L)
 outp trans
 end

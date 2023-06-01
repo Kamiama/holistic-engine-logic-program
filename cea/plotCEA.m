@@ -24,7 +24,7 @@ oxidizer = {'O2(L)'}; % oxidizer formula for NASA CEA
 oxidizer_temp = 0;   % fuel temperature [K]
 g = 1;          % gravitational constant [ft/s^2]
 
-iterating_value = "OF";
+iterating_value = "P_c";
 min_value_OF = .2;
 max_value_OF = 2;
 step_value_OF = .05;
@@ -65,7 +65,7 @@ figure('Name', 'PlotCEA')
 hold("on")
 
 yyaxis left
-plot(matrix, isp_matrix, 'blue');
+plot(matrix, isp_matrix, 'blue', 'Linewidth', 4);
 if iterating_value == "OF"
     xlabel('OF')
 elseif iterating_value == "P_c"
@@ -75,7 +75,7 @@ ylabel('Ideal Isp (sec)')
 set(gca, 'Ycolor', 'k')
 
 yyaxis right
-plot(matrix, T_matrix, 'red');
+plot(matrix, T_matrix, 'red', 'Linewidth', 4);
 if iterating_value == "OF"
     xlabel('OF')
 elseif iterating_value == "P_c"
@@ -85,9 +85,13 @@ ylabel('Combustion Temperature [R]')
 set(gca, 'Ycolor', 'k')
 
 grid on
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 18)
+set(gca, 'XLim', [50, 350])
+% set(gca, 'XLim', [0.3, 1.9])
 legend('Ideal Isp', 'Combustion Temperature', 'Location', 'Northwest')
 
+yyaxis left
+ylim([160 250])
 % if iterating_value == "OF"
 %     title(iterating_value + " plot:     " + fuel + " / " + oxidizer + " @ " + P_c + " psi P_c, " + P_e + " psi P_e")
 % elseif iterating_value == "P_c"

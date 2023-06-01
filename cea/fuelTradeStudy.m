@@ -56,20 +56,21 @@ for fuel = fuels
         i = i + 1;
     end
     i = 1;
-    plot(OF_matrix, isp_matrix);
+    plot(OF_matrix, isp_matrix, 'Linewidth', 4);
     propellant_string = num2cell(char(fuel + " / " + oxidizer), 2);
     legend_str{j} = [strjoin(propellant_string), j];
     legend(legend_str);
 
     [~, max_index] = max(isp_matrix);
-    plot(OF_matrix(max_index), max(isp_matrix), 'k.', 'MarkerSize', 10, 'HandleVisibility', 'off')
+    plot(OF_matrix(max_index), max(isp_matrix), 'k.', 'MarkerSize', 30, 'HandleVisibility', 'off')
   
     j = j + 1;
 end
 
 xlabel('Mixture Ratio')
 ylabel('Ideal Isp (sec)')
-set(gca, 'XLim', [min_value_OF, max_value_OF], 'FontSize', 14)
+set(gca, 'XLim', [0.75, 2.4], 'FontSize', 17)
+set(gca, 'YLim', [205, 265])
 grid on
 
 %title("Propellant Performance vs Mixture Ratio: " + P_c + " psi P_c, " + P_e + " psi P_e")

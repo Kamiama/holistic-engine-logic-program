@@ -284,12 +284,12 @@ r_interpolated = interp1(x_contour,r_contour,x_standard);
 subsonic_area_ratios = (pi * r_interpolated(x_standard < 0) .^ 2) / A_t;
 supersonic_area_ratios = (pi * r_interpolated(x_standard > 0) .^ 2) / A_t;
 A_ratio = [subsonic_area_ratios, supersonic_area_ratios];
-for u = 1:length(A_ratio)
-    if A_ratio(u) < 1
-        A_ratio(u) = 1;
+for u = 1:length(subsonic_area_ratios)
+    if subsonic_area_ratios(u) < 1
+        subsonic_area_ratios(u) = 1;
     end
 end
-%[~, steps] = size(r_contour);
+[~, steps] = size(r_contour);
 
 % axial coolant property matrices
 P_l = zeros(1, points);
@@ -321,11 +321,12 @@ cp_g = zeros(1, points);
 
 i = 1;
 for sub = subsonic_area_ratios
-    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 1, 0, 0, CEA_input_name);
+    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 2, 0, 0, CEA_input_name);
     i = i + 1;
 end
+i = size(subsonic_area_ratios, 2) + 1;
 for sup = supersonic_area_ratios
-    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, sup, 1, 0, 0, CEA_input_name);
+    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, sup, 2, 0, 0, CEA_input_name);
     i = i + 1;
 end
 
@@ -393,8 +394,8 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 rho_l(i) = py.CoolProp.CoolProp.PropsSI('D','T', T_l(i),'P', P_l(i),'Water');
                 v(i) = m_dot_CHANNEL / rho_l(i) / A_x(i); % velocity at step [m/s]
                 ed = e/(hydraulic_D_x(i)*1000);
-                Re_l
-                Re2 = (rho_l(i) * v(i)*(hydraulic_D_x(i)))/ mu_lb
+                %Re_l
+                Re2 = (rho_l(i) * v(i)*(hydraulic_D_x(i)))/ mu_lb;
                 f = moody(ed, Re2);
                 cf = f/4;
 
@@ -411,20 +412,19 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
 
          %P_l(i+1) = P_l(i) - cf * deltax / hydraulic_D_x(i) * 2 * rho_l(i) * v(i)^2; % new liquid pressure (Heister EQ 6.36).
     
-                fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
-                a = x_standard(i)
+%                 fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
+                a = x_standard(i);
         
                 % prepare for next step
                 T_wg(i+1) = T_wg(i);
             end
             
-            i = i + 1;            
             converged = 1;
         end
     end
 end
 
-% PLOT OUTPUTS
+%% PLOT OUTPUTS
 
 figure('Name', 'Temperature Plot');
 hold on;
@@ -616,6 +616,6 @@ if plots
     maxVonMisesStressFEA = max(channelVonMises)
 
 end
+%%
 
-
-
+plot(x_standard, mu_g);

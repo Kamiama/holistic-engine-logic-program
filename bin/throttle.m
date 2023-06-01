@@ -3,7 +3,7 @@
 % First Created: 3/28/2023
 % Last Updated: 4/10/2023
 
-function [] = throttle(min_throttle_pct, F_max, eff_c_star, eff_c_f, P_c_max, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name, resolution)
+% function [] = throttle(min_throttle_pct, F_max, eff_c_star, eff_c_f, P_c_max, P_e, P_a, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, CEA_input_name, resolution)
 
 %{ 
 Description: Takes throttle percent as an input and performs analysis to
@@ -45,21 +45,23 @@ addpath(cea_path);
 
 %% Initializion & Variable Definition
 
-% % debugging values
-% min_throttle_pct = .25;
-% F_max = 550;
-% P_c_max = 220;
-% P_e = 18;
-% P_a = 14.7;
-% fuel = 'C3H8O,2propanol';
-% fuel_weight = 0;
-% fuel_temp = 293.15;
-% oxidizer = 'O2(L)';
-% oxidizer_temp = 90.17;
-% OF = 1.3;
-% CEA_input_name = 'test';
-% eff_c_f = .9;
-% eff_c_star = .9;
+% debugging values
+min_throttle_pct = .4;
+F_max = 550;
+P_c_max = 275;
+P_e = 14.7;
+P_a = 14.7;
+fuel = 'C3H8O,2propanol';
+fuel_weight = 0;
+fuel_temp = 293.15;
+oxidizer = 'O2(L)';
+oxidizer_temp = 90.17;
+OF = 1.3;
+CEA_input_name = 'test';
+eff_c_f = .95;
+eff_c_star = .92;
+resolution = 100;
+
 
 g = 32.174; % gravitational acceleration [ft/s^2]
 
@@ -215,31 +217,32 @@ hold on
 
 % chamber pressure plot
 subplot(2,2,1)
-plot(throttle_pct, P_cs, 'blue');
+plot(throttle_pct, P_cs, 'blue', 'Linewidth', 4);
 title('Chamber Pressure vs Throttle')
-xlabel('Throttle %')
+xlabel('Throttle')
 ylabel('Chamber Pressure [psi]')
 axis([throttle_pct(end) throttle_pct(1) P_cs(end) P_cs(1)])
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 17)
 grid on
+
 
 % mass flow rate plot
 subplot(2,2,2)
-plot(throttle_pct, m_dots, 'blue');
+plot(throttle_pct, m_dots, 'blue', 'Linewidth', 4);
 title('Mass Flow Rate vs Throttle')
-xlabel('Throttle %')
+xlabel('Throttle')
 ylabel('Mass Flow Rate [lb/s]')
-axis([throttle_pct(end) throttle_pct(1) m_dots(end) m_dots(1)])
-set(gca, 'FontSize', 14)
+axis([throttle_pct(end) throttle_pct(1) m_dots(end) m_dots(1)]) % 1.24
+set(gca, 'FontSize', 17)
 grid on
 
 % exit pressure plot
 subplot(2,2,3)
 hold on
-plot(throttle_pct, P_es, 'blue');
-plot(throttle_pct, P_seps, 'red', 'LineStyle', '--');
+plot(throttle_pct, P_es, 'blue', 'Linewidth', 4);
+plot(throttle_pct, P_seps, 'red', 'LineStyle', '--', 'Linewidth', 4);
 title('Exit Pressure vs Throttle')
-xlabel('Throttle %')
+xlabel('Throttle')
 ylabel('Exit Pressure [psi]')
 % if P_es(end) > P_sep
 %     axis([throttle_pct(end) throttle_pct(1) P_sep-1 P_es(1)])
@@ -249,16 +252,16 @@ ylabel('Exit Pressure [psi]')
 % flow separation line
 % line([-100 100],[P_sep P_sep], 'Color', 'red', 'LineStyle', '--')
 legend('', 'Flow Separation Condition', 'Location', 'Northwest')
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 17)
 grid on
 
 % isp plot
 subplot(2,2,4)
 % relative isps
 yyaxis left
-plot(throttle_pct, rel_isps, 'blue');
+plot(throttle_pct, rel_isps, 'blue', 'Linewidth', 4);
 title('Isp vs Throttle')
-xlabel('Throttle %')
+xlabel('Throttle')
 ylabel('Isp / Isp^n^o^m')
 grid on
 set(gca, 'XLim', [throttle_pct(end), throttle_pct(1)], 'YLim', [rel_isps(end), rel_isps(1)], 'Ycolor', 'k')
@@ -266,7 +269,7 @@ set(gca, 'XLim', [throttle_pct(end), throttle_pct(1)], 'YLim', [rel_isps(end), r
 yyaxis right
 isp_axis = round(linspace(min(flip(rel_isps .* isp_max)), max(flip(rel_isps .* isp_max)), 5) .* 10) ./ 10;
 set(gca,'YTick', isp_axis, 'YLim', [min(isp_axis), max(isp_axis)], 'Ycolor', 'k')
-set(gca, 'FontSize', 14)
+set(gca, 'FontSize', 17)
 ylabel('Isp [sec]')
 
 %sgtitle("Throttled Chamber Performance: " + F_max + "lbf, " + OF + " OF ratio, " + min_throttle_pct * 100 + "% min throttle")
