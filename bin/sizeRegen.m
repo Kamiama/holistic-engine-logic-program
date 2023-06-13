@@ -120,13 +120,14 @@ CEA_input_name = 'AAAAAA';
         total_length = chamber_length + converging_length + diverging_length; % Total length (mm) [conversion * in]
         
         %[~, steps] = size(r_contour)
-        steps = 2000;
-        deltax = (total_length/steps) %m
-        points = steps + 1;
+    % Discretize Length 
+        steps = 2000; % Number of steps along chamber (Change resolution of simulation)
+        deltax = (total_length/steps) % Change in distance per step [m]
+        points = steps + 1; % Number of points along chamber
         
 
         x = 0:deltax:total_length; %Length Vector
-        x_plot = (x - chamber_length - converging_length); %Length Vector ajusted so that 0 is at the throat (mm)
+        x_plot = (x - chamber_length - converging_length); %Length Vector adjusted so that 0 is at the throat (mm)
         
         %Initialize section length vectors
         x_chamber = [];
