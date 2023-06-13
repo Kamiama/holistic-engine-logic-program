@@ -106,26 +106,29 @@ CEA_input_name = 'AAAAAA';
 %% Parse variables
 
     % geometric properties
-        A_local = []; %Local Cross Sectional Areas of Engine
-        dlocal = [];  %Local Cross Sections of Channels
-        characteristic_length = 10; %Longest length of Channels 
+        A_local = []; % Local Cross Sectional Areas of Engine
+        dlocal = [];  % Local Cross Sections of Channels
+        characteristic_length = 10; % Longest length of Channels 
         %chamber_length = 7; %in
         D_t = R_t * 2; % diameter at nozzle throat [m]
         R_of_curve = 1.5 * D_t / 2; % [m]
         A_local = pi * (R_t) ^ 2; % local cross sectional areas of engine
     % temporary geometry initialization
-        chamber_length = 0.0254 * 4.5427; %Chamber Length (m) [conversion * in]
-        converging_length = 0.0254 * 1.8278; %Converging Length (m) [conversion * in]
-        diverging_length = 0.0254 * 1.7191; %Diverging Length (m) [conversion * in]
-        total_length = chamber_length + converging_length + diverging_length; %Total length (mm) [conversion * in]
+        chamber_length = 0.0254 * 4.5427; % Chamber Length (m) [conversion * in]
+        converging_length = 0.0254 * 1.8278; % Converging Length (m) [conversion * in]
+        diverging_length = 0.0254 * 1.7191; % Diverging Length (m) [conversion * in]
+        total_length = chamber_length + converging_length + diverging_length; % Total length (mm) [conversion * in]
         
-        [~, steps] = size(r_contour);
-        points = steps + 1; 
-        deltax = (total_length/steps)  %m
+        %[~, steps] = size(r_contour)
+        steps = 2000;
+        deltax = (total_length/steps) %m
+        points = steps + 1;
         
 
         x = 0:deltax:total_length; %Length Vector
-        x_standard = (x - chamber_length - converging_length); %(mm)
+        x_plot = (x - chamber_length - converging_length); %Length Vector ajusted so that 0 is at the throat (mm)
+        
+        %Initialize section length vectors
         x_chamber = [];
         x_converging = [];
         x_diverging = [];
@@ -149,28 +152,28 @@ CEA_input_name = 'AAAAAA';
         %w_c = .0016;
         %length = L_seg * u.IN2M;      % [m], arbitrary for now
         
-        A = w_c .* h_c; %Channel Cross-sectional Area (m^2) [1 min 2]
-        p_wet = 2*w_c + 2*h_c; %Wetted Perimeter of the pipe (m) [1 min 2]
-        hydraulic_D = (4.*A)./p_wet; %hydraulic Diameter (m) [1 min 2]
+        A = w_c .* h_c; % Channel Cross-sectional Area (m^2) [1 min 2]
+        p_wet = 2*w_c + 2*h_c; % Wetted Perimeter of the pipe (m) [1 min 2]
+        hydraulic_D = (4.*A)./p_wet; % hydraulic Diameter (m) [1 min 2]
 
-
-        w_c_chamber = ones(1,size(x_chamber,2)).*w_c(1); %Rib height over Chamber length 
+        %Set channel width/height over channel length
+        w_c_chamber = ones(1,size(x_chamber,2)).*w_c(1); % Channel width over Chamber length (constant)
         w_c_converging = ((w_c(2)-w_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
-                 + ones(1,size(x_converging,2)).*w_c(1);
+                 + ones(1,size(x_converging,2)).*w_c(1); % Channel width over converging length (linear interpolation)
         w_c_diverging = ((w_c(3)-w_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
-                + ones(1,size(x_diverging,2)).*w_c(2);
-        w_c_x = [w_c_chamber w_c_converging w_c_diverging];
+                + ones(1,size(x_diverging,2)).*w_c(2);   % Channel width over diverging length (linear interpolation)
+        w_c_x = [w_c_chamber w_c_converging w_c_diverging]; % Combine channel width vectors
 
-        h_c_chamber = ones(1,size(x_chamber,2)).*h_c(1); %Rib height over Chamber length 
+        h_c_chamber = ones(1,size(x_chamber,2)).*h_c(1); % Channel height over Chamber length (constant_
         h_c_converging = ((h_c(2)-h_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
-             + ones(1,size(x_converging,2)).*h_c(1);
+             + ones(1,size(x_converging,2)).*h_c(1);    % Channel height over converging length (linear interpolation)
         h_c_diverging = ((h_c(3)-h_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
-             + ones(1,size(x_diverging,2)).*h_c(2);
-        h_c_x = [h_c_chamber h_c_converging h_c_diverging];
+             + ones(1,size(x_diverging,2)).*h_c(2); % Channel height over diverging length (linear interpolation)
+        h_c_x = [h_c_chamber h_c_converging h_c_diverging]; % Combine channel height vectors
 
-        A_x = (w_c_x .* h_c_x); %m^2
-        p_wet_x = 2.*w_c_x + 2 .* h_c_x; %m
-        hydraulic_D_x = ((4.*(A_x))./p_wet_x); %m
+        A_x = (w_c_x .* h_c_x); % Channel area vector over channel length [m^2]
+        p_wet_x = 2.*w_c_x + 2 .* h_c_x; % Wet perimeter over channel length [m]
+        hydraulic_D_x = ((4.*(A_x))./p_wet_x); % Hydraulic Diameter over channel length [m]
 
         
        
@@ -279,17 +282,18 @@ inlet_pressure = 500 * u.PSI2PA; % [Pa]
 
 
 % Step 1: Prescribe initial properties
-%x_input = x_standard;
-r_interpolated = interp1(x_contour,r_contour,x_standard);
-subsonic_area_ratios = (pi * r_interpolated(x_standard < 0) .^ 2) / A_t;
-supersonic_area_ratios = (pi * r_interpolated(x_standard > 0) .^ 2) / A_t;
+
+% Prescribe area ratios
+r_interpolated = interp1(x_contour,r_contour,x_plot); % Linearly Interpolate r vector  
+subsonic_area_ratios = (pi * r_interpolated(x_plot < 0) .^ 2) / A_t; % subsonic area ratios on discretized points
+supersonic_area_ratios = (pi * r_interpolated(x_plot > 0) .^ 2) / A_t; %  supersonic area ratios on discretized points
 A_ratio = [subsonic_area_ratios, supersonic_area_ratios];
 for u = 1:length(subsonic_area_ratios)
     if subsonic_area_ratios(u) < 1
         subsonic_area_ratios(u) = 1;
     end
 end
-[~, steps] = size(r_contour);
+
 
 % axial coolant property matrices
 P_l = zeros(1, points);
@@ -393,29 +397,28 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
  
                 rho_l(i) = py.CoolProp.CoolProp.PropsSI('D','T', T_l(i),'P', P_l(i),'Water');
                 v(i) = m_dot_CHANNEL / rho_l(i) / A_x(i); % velocity at step [m/s]
-                ed = e/(hydraulic_D_x(i)*1000);
-                %Re_l
+                
+                % Use moody diagram to find coefficient of friction
+                ed = e/(hydraulic_D_x(i)*1000); 
                 Re2 = (rho_l(i) * v(i)*(hydraulic_D_x(i)))/ mu_lb;
                 f = moody(ed, Re2);
                 cf = f/4;
 
 
-                deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2));
+                deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % Calculate change in pressure
                 
                 %deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho
                 %*(v(i))^(2)  + .5 * ((v_x(i)^2) -(v_x(i-1)^2))) % may need
                 %to put this in different part of loop if we want to use
                 %full bernoulli's
 
-                P_l(i+1) =   P_l(i) - deltaP;
 
-
-         %P_l(i+1) = P_l(i) - cf * deltax / hydraulic_D_x(i) * 2 * rho_l(i) * v(i)^2; % new liquid pressure (Heister EQ 6.36).
-    
-%                 fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
-                a = x_standard(i);
+                %P_l(i+1) = P_l(i) - cf * deltax / hydraulic_D_x(i) * 2 * rho_l(i) * v(i)^2; % new liquid pressure (Heister EQ 6.36).
+                % fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg(i))
+                %a = x_plot(i);
         
                 % prepare for next step
+                P_l(i+1) =   P_l(i) - deltaP; % Update pressure for next iteration
                 T_wg(i+1) = T_wg(i);
             end
             
@@ -432,15 +435,16 @@ hold on;
 % temperature plot
 % subplot(2,1,1)
 yyaxis left
-plot(x_standard .* 1000, T_wg, 'red', 'LineStyle', '-');
-plot(x_standard .* 1000, T_wl, 'magenta', 'LineStyle', '-');
-plot(x_standard .* 1000, T_l, 'blue', 'LineStyle', '-');
+plot(x_plot .* 1000, T_wg, 'red', 'LineStyle', '-');
+plot(x_plot .* 1000, T_wl, 'magenta', 'LineStyle', '-');
+plot(x_plot .* 1000, T_l, 'blue', 'LineStyle', '-');
 ylabel('Temperature [K]')
 set(gca, 'Ycolor', 'k')
 grid on
 
 yyaxis right
-plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
+%plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
+plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
@@ -452,19 +456,20 @@ xlabel('Location [mm]')
 
 figure(2)
 
-subplot(2,1,2)
-plot(x_standard, T_l);
+
 subplot(2,2,1)
-plot(x_standard, A_x * 1000000);
+plot(x_plot.* 1000, A_x * 1000000);
+title("Channel Area [mm^2]")
+xlabel("Location [mm]")
 subplot(2,2,2)
-plot(x_standard, v);
-figure(3)
-subplot(2,1,1)
-plot(x_standard * 1000 , hydraulic_D_x * 1000);
-subplot(2,2,1)
-plot(x_standard, A_ratio)
-subplot(2,2,2)
-plot(x_standard, P_l * 1/6894.757)
+plot(x_plot.* 1000, v);
+title("Coolant Velocity [m/s]")
+xlabel("Location [mm]")
+subplot(2,2,3)
+plot(x_plot.* 1000, P_l * 1/6894.757)
+title("Liquid Pressure [psi]")
+xlabel("Location [mm]")
+
 %figure('Name', 'Heat Flux Plot');
 %hold on;
 % % heat flux plot
@@ -618,4 +623,4 @@ if plots
 end
 %%
 
-plot(x_standard, mu_g);
+%plot(x_standard, mu_g);
