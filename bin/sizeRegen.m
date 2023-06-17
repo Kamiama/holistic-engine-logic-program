@@ -121,7 +121,7 @@ CEA_input_name = 'AAAAAA';
         
         %[~, steps] = size(r_contour)
     % Discretize Length 
-        steps = 2000; % Number of steps along chamber (Change resolution of simulation)
+        steps = 200; % Number of steps along chamber (Change resolution of simulation)
         deltax = (total_length/steps) % Change in distance per step [m]
         points = steps + 1; % Number of points along chamber
         
@@ -231,7 +231,7 @@ counter = 0; % counter for loop
     while ~(converged)
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
         sigma = (.5 * T_wg / T_g * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_g / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_c / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
         r = Pr_g ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g * (1 + (gamma - 1) / 2 * r * M ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g = h_g * (T_r - T_wg); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -294,7 +294,11 @@ for u = 1:length(subsonic_area_ratios)
         subsonic_area_ratios(u) = 1;
     end
 end
-
+for u = 1:length(supersonic_area_ratios)
+    if supersonic_area_ratios(u) < 1
+        supersonic_area_ratios(u) = 1;
+    end
+end
 
 % axial coolant property matrices
 P_l = zeros(1, points);
@@ -353,8 +357,8 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
     
     while ~(converged) && counter < 250
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
-        sigma = (.5 * T_wg(i) / T_g(i) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_g(i) / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        sigma = (.5 * T_wg(i) / T_g(1) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
+        h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_c / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
         r = Pr_g(i) ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g(i) * (1 + (gamma(i) - 1) / 2 * r * M(i) ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -622,6 +626,4 @@ if plots
     maxVonMisesStressFEA = max(channelVonMises)
 
 end
-%%
 
-%plot(x_standard, mu_g);
