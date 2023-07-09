@@ -69,7 +69,7 @@ contour = readmatrix('contour.xlsx');
 % load("x_contour.mat");
 r_contour = (contour(:,2) * u.IN2M)';
 x_contour = (contour(:,1) * u.IN2M)';
-R_t = .706; % [in]
+[R_t, t_local] = min(r_contour); % [in]
 P_c = 275; % [psi]
 P_e = 18.5; % [psi]
 fuel = 'C3H8O,2propanol';
@@ -95,8 +95,8 @@ coolantdirection = 0; % 1: Direction opposite of hot gas flow direction
                       % 0: Direction same as hot flow gas direction
 % convert imperial units to metric
 
-R_t = R_t * u.IN2M; % throat radius [m]
-A_t = R_t ^ 2 * pi; % throat area [m^2]
+%R_t = R_t * u.IN2M; % throat radius [m]
+A_t = (R_t ^ 2) * pi; % throat area [m^2]
 P_c = P_c * u.PSI2PA; % chamber pressure [Pa]
 P_e = P_e * u.PSI2PA; % exit pressure [Pa]
 
@@ -121,7 +121,7 @@ CEA_input_name = 'AAAAAA';
         
         %[~, steps] = size(r_contour)
     % Discretize Length 
-        steps = 200; % Number of steps along chamber (Change resolution of simulation)
+        steps = 500; % Number of steps along chamber (Change resolution of simulation)
         deltax = (total_length/steps) % Change in distance per step [m]
         points = steps + 1; % Number of points along chamber
         
@@ -147,8 +147,10 @@ CEA_input_name = 'AAAAAA';
 
     % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
         t_w = 0.001;        % [m]
-        h_c = [.0035 .0014 .0035]; % [1 min 2] [m]    
-        w_c = [.0055 0.0016 .004];     % [1 min 2] [m]
+        h_c = [.0015 .0015 .0015]; % [1 min 2] [m]    
+        w_c = [.0025 0.0025 .0025];     % [1 min 2] [m]
+        %h_c = [.0035 .0014 .0035]; % [1 min 2] [m]    
+        %w_c = [.0055 0.0016 .004];     % [1 min 2] [m]
         %h_c = .0014;
         %w_c = .0016;
         %length = L_seg * u.IN2M;      % [m], arbitrary for now
@@ -288,18 +290,17 @@ inlet_pressure = 500 * u.PSI2PA; % [Pa]
 r_interpolated = interp1(x_contour,r_contour,x_plot); % Linearly Interpolate r vector  
 subsonic_area_ratios = (pi * r_interpolated(x_plot < 0) .^ 2) / A_t; % subsonic area ratios on discretized points
 supersonic_area_ratios = (pi * r_interpolated(x_plot > 0) .^ 2) / A_t; %  supersonic area ratios on discretized points
+% for u = 1:length(subsonic_area_ratios)
+%     if subsonic_area_ratios(u) < 1
+%         subsonic_area_ratios(u) = 1;
+%     end
+% end
+% for u = 1:length(supersonic_area_ratios)
+%     if supersonic_area_ratios(u) < 1
+%         supersonic_area_ratios(u) = 1;
+%     end
+% end
 A_ratio = [subsonic_area_ratios, supersonic_area_ratios];
-for u = 1:length(subsonic_area_ratios)
-    if subsonic_area_ratios(u) < 1
-        subsonic_area_ratios(u) = 1;
-    end
-end
-for u = 1:length(supersonic_area_ratios)
-    if supersonic_area_ratios(u) < 1
-        supersonic_area_ratios(u) = 1;
-    end
-end
-
 % axial coolant property matrices
 P_l = zeros(1, points);
 T_l = zeros(1, points);
@@ -312,6 +313,7 @@ qdot_g = zeros(1, points);
 T_wl = zeros(1, points);
 T_wg = zeros(1, points);
 h_g = zeros(1, points);
+sigma = zeros(1, points);
 h_l = zeros(1, points);
 
 % axial channel geometric property matrices
@@ -357,8 +359,8 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
     
     while ~(converged) && counter < 250
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
-        sigma = (.5 * T_wg(i) / T_g(1) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_c / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        sigma(i) = (.5 * T_wg(i) / T_g(1) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
+        h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_c / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma(i); % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
         r = Pr_g(i) ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g(i) * (1 + (gamma(i) - 1) / 2 * r * M(i) ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -474,26 +476,30 @@ subplot(2,2,3)
 plot(x_plot.* 1000, P_l * 1/6894.757)
 title("Liquid Pressure [psi]")
 xlabel("Location [mm]")
+subplot(2,2,4)
+plot(x_plot.*1000, h_g)
+title("film coeffcient [W/m^2-K]")
+xlabel("Location [mm]");
 
-%figure('Name', 'Heat Flux Plot');
-%hold on;
-% % heat flux plot
-% %subplot(2,1,2)
-% yyaxis left
-% plot(x_contour .* 1000, flip(qdot_g) ./ 1000, 'red', 'LineStyle', '-');
-% ylabel('Heat Flux [kW/m^2]')
-% set(gca, 'Ycolor', 'k')
-% grid on
-% 
-% yyaxis right
-% plot(x_contour .* 1000, r_contour .* 1000, 'black', 'LineStyle', '-');
-% ylabel('Radius [mm]')
-% set(gca, 'Ycolor', 'k')
-% axis equal;
-% 
-% legend('Convective Heat Flux', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
-% title('Heat Flux Distribution')
-% xlabel('Location [mm]')
+figure('Name', 'Heat Flux Plot');
+hold on;
+% heat flux plot
+%subplot(2,1,2)
+yyaxis left
+plot(x_plot .* 1000, qdot_g ./ 1000, 'red', 'LineStyle', '-');
+ylabel('Heat Flux [kW/m^2]')
+set(gca, 'Ycolor', 'k')
+grid on
+
+yyaxis right
+plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
+ylabel('Radius [mm]')
+set(gca, 'Ycolor', 'k')
+axis equal;
+
+legend('Convective Heat Flux', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
+title('Heat Flux Distribution')
+xlabel('Location [mm]')
     
 %         %Step 12: Structural Analysis Checks
 %         St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
