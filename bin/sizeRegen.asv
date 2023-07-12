@@ -273,14 +273,14 @@ counter = 0; % counter for loop
             converged = 1; % end loop
 
             % Fin heat transfer, adiabatic tip, Biot << 0.1
-            T_base = T_wl;                      % Temperature at fin base
-            P_fin = 2 * deltax + 2 * w_c(2);    % Fin perimeter (step distance & channel width)
-            A_c_fin = w_c(2) * deltax;          % Fin area at current step
-            m_fin = sqrt(h_l * P_fin / (k_w * A_c_fin));                % Fin m
-            M_fin = sqrt(h_l * P_fin * k_w * A_c_fin) * (T_base - T_l); % Fin M
-            fin_q = M_fin * tanh(m_fin * h_c(2));               % Fin heat transfer rate
-            eff_fin = tanh(m_fin * h_c(2)) / (M_fin * h_c(2));  % Fin efficienct
-            biot_fin = h_l / k_w * w_c(2);                      % Biot number to test assumptions
+            T_base = T_wl;
+            fin_P = 2 * deltax + 2 * w_c(2);    % Fin perimeter (step distance & channel width)
+            fin_A_c = w_c(2) * deltax;          % Fin area at current step
+            fin_m = sqrt(h_l * fin_P / (k_w * fin_A_c));    % Fin m
+            fin_M = sqrt(h_l * fin_P * k_w * fin_A_c) * (T_base - T_l); % Fin M
+            fin_q = fin_M * tanh(fin_m * h_c(2));   % Fin heat transfer rate
+            eff_fin = tanh(fin_m * h_c(2)) / (fin_M * h_c(2));  % Fin efficienct
+            biot_fin = h_l / k_w * w_c(2);  % Biot number to test assumptions
 
         end
     end
