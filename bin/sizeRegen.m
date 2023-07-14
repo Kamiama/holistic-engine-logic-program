@@ -2,35 +2,27 @@
 % % Authors: Kamon Blong (kamon.blong@gmail.com), Jan Ayala, Andrew Radulovich, Alex Suppiah
 % % First Created: 10/23/2022
 % % Last Updated: 04/15/2023
-% 
-% function [] = sizeRegen(x_contour, r_contour, L_seg, R_t, nozzle_regen_pct, m_dot, P_c_max, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF)
 
    %{ 
     Description:
-    This program sets fluid and material inputs and then iterates starting from a
-    variable distance downstream of the throat and carries it through up to the injector face. 
-    Channels have a constant width but have the option to change channel height to 
-    decrease hydraulic diameter and increase fluid velocity (thereby increasing cooling
-    effectiveness) in key locations. This method allows for optimal machining via CSJ
-    with a slitter-saw CNC attatchment or via powder bed 3D printing.
+    This program calculates the heat flux and wall temperture across a
+    regen engine. The user inputs engine definition parameters and channel
+    inlet conditions. Steady state equilibrium equations are utilized to
+    converge on a heatflux and temperature at each point. Calculations at
+    the previous point are used as the initial conditions of the next as
+    it moves down the engine. The program utilized CEA and CoolProp for
+    combustion properties and coolant properties respectively.
 
     Program Methodology
-    - take inputs from main sizing code
-    - calculate optimal number of channels
-    - prescribe channel inputs (pressure, temperature, mdot, ect)
+    - define engine with user input
     - run CEA and get bartz film coefficient axially along chamber
-    - calculate minimum wall thickness at throat
     - begin iterating along channel length from nozzle end to the injector face
-        - for each point, iterate through aspect ratio to find the maximum
-        channel size possible without melting (below a certain prescribed size)
         - integrate heat entry and pressure loss for the given step size
-        - repeat process all the way up the channel, checking for structural
-        stability at each point - if there is a point where the channels overheat
-        or the working fluid boils, lower the aspect ratio cap and repeat
-    - run program again with new pressure drop value until the calculated exit 
-    pressure equals the guessed exit pressure
-    - once iterative sizing is complete, display axial wall thickness and
-    channel depth on main engine contour plot
+        - repeat process all the way up the channel
+    - repeat calculation at the throat using interpolated values from the
+    previous step as the initial conditions
+    - display heat transfer, temperatures, pressure drop, film coefficient,
+    channel geometry, coolant velocity on the engine contour
     
     Inputs:
     - x_contour: 
@@ -65,7 +57,7 @@ CEA_input_name = 'AAAAAA';
 
 %% SIMULATION PARAMETERS (INPUTS)
 plots = 0; %Do ansys or not ???? DUmb name
-steps = 50; % Number of steps along chamber (Change resolution of simulation)
+steps = 100; % Number of steps along chamber (Change resolution of simulation)
 qdot_tolerance = 0.0001; % set heattransfer convergence tolerance
 
 
@@ -128,7 +120,7 @@ A_local = pi * (R_t) ^ 2; % local cross sectional areas of engine
 % Discretize Chamber Length 
 deltax = (total_length/steps); % change in distance per step [m]
 points = steps + 1; % number of points along chamber
-x = 0:deltax:total_length; % length cector
+x = 0:deltax:total_length; % length vector
 x_plot = (x - chamber_length - converging_length); % length vector adjusted so that 0 is at the throat (mm)
 
 % Parse engine section length vectors
@@ -306,78 +298,69 @@ end
 % determines heat transfer and temperature at the throat
 
 % Step 1: Prescribe initial properties
-[c_star, ~, ~, M, gamma, P_g, T_g, ~, mu_g, Pr_g, ~, ~, ~, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 1, 0, 0, CEA_input_name);
+[c_star_t, ~, ~, M_t, gamma_t, P_g_t, T_g_t, ~, mu_g_t, Pr_g_t, ~, ~, ~, cp_g_t] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); % ******
 
 % Steps 2 & 3: Set channel inlet properties
-P_l = inlet_pressure; 
-T_l = inlet_temperature; 
+P_l_t = (P_l(length([x_chamber, x_converging])) + P_l(length([x_chamber, x_converging]) + 1) ) / 2; % coolant pressure at throat [Pa] (interpolated)
+T_l_t = (T_l(length([x_chamber, x_converging])) + T_l(length([x_chamber, x_converging]) + 1) ) / 2; % coolant tepemperature at throat [K] (interpolated)
 
 % Step 4: Take hot wall temperature guess and initialize loop
 
-T_wg = 1000; % initial guess of wall side temperature [K]
+T_wg_t = (T_wg(length([x_chamber, x_converging])) + T_wg(length([x_chamber, x_converging]) + 1) ) / 2 % initial guess of wall side temperature at throat [K] (interpolated) 
 T_wg_mn = 294.15; % minimum temperature bound
 T_wg_mx = 2000; % maximum temperature bound
 
 converged = 0; % wall temperature loop end condition
-structurally_sound = 0; % wall thickness loop end condition
 counter = 0; % counter for loop
 
-% start loop with a minimum wall thickness value and increase wall thickness until structurally sound
-%while ~(structurally_sound)
 
-    % start loop to converge on wall temperature
-    while ~(converged)
-        % Step 5: Calculate gas film coefficient and gas-side convective heat flux
-        sigma = (.5 * T_wg / T_g * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_c / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
-        r = Pr_g ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
-        T_r = T_g * (1 + (gamma - 1) / 2 * r * M ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
-        qdot_g = h_g * (T_r - T_wg); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
+% start loop to converge on wall temperature
+while ~(converged)
+    % Step 5: Calculate gas film coefficient and gas-side convective heat flux
+    sigma = (.5 * T_wg_t / T_g_t * (1 + (gamma_t - 1) / 2 * M_t ^ 2) + .5) ^ -.68 * (1 + (gamma_t - 1) / 2 * M_t ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
+    h_g_t = (0.026 / D_t ^ 0.2) * (mu_g_t ^ 0.2 * cp_g_t / Pr_g_t ^ 0.6) * (P_c / c_star_t) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+    r = Pr_g_t ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
+    T_r = T_g_t * (1 + (gamma_t - 1) / 2 * r * M_t ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
+    qdot_g_l = h_g_t * (T_r - T_wg_t); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
+
+    % Step 6: Calculate liquid wall temperature
+    T_wl_t = T_wg_t - qdot_g_l * t_w / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
+
+    % Step 7: Calculate liquid film coefficient
+    % run coolprop to get coolant properties
+    mu_lb = py.CoolProp.CoolProp.PropsSI('V','T', T_l_t, 'P', P_l_t, coolant); % viscosity of bulk coolant [Pa-s]
+    cp_l = py.CoolProp.CoolProp.PropsSI('C' , 'T', T_l_t, 'P', P_l_t, coolant); % specific heat of coolant [J/kg-k] 
+    k_l = py.CoolProp.CoolProp.PropsSI('L', 'T', T_l_t, 'P', P_l_t, coolant); % thermal conductivity of coolant [W/m-K]
+    rho_l_t = py.CoolProp.CoolProp.PropsSI('D','T', T_l_t,'P', P_l_t,'Water'); % density of the coolant [???]
+    v_t = m_dot_CHANNEL / rho_l_t / A(2); % velocity at step [m/s]  
+
+    Re_l = (rho_l_t * v_t * hydraulic_D(2)) / mu_lb; % reynolds number for channel flow [N/A] (Huzel and Huang , pg 90)
+    Pr_l = (cp_l * mu_lb) / k_l; % prantl number [N/A] (Huzel and Huang, pg 90)
+    Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl_t / T_l_t) ^ -.3; % nusselt number [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19).
+    h_l_t = (Nu_l * k_l) / hydraulic_D(2); % liquid film coefficient [W/m^2-K] (Heister EQ 6.19)
     
-        % Step 6: Calculate liquid wall temperature
-        T_wl = T_wg - qdot_g * t_w / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
-    
-        % Step 7: Calculate liquid film coefficient
-        % run coolprop to get coolant properties
-        mu_lb = py.CoolProp.CoolProp.PropsSI('V','T', T_l, 'P', P_l, coolant); % viscosity of bulk coolant [Pa-s]
-        cp_l = py.CoolProp.CoolProp.PropsSI('C' , 'T', T_l, 'P', P_l, coolant); % specific heat of coolant [J/kg-k] 
-        k_l = py.CoolProp.CoolProp.PropsSI('L', 'T', T_l, 'P', P_l, coolant); % thermal conductivity of coolant [W/m-K]
-            
-        Re_l = (4 * m_dot_CHANNEL) / (pi * hydraulic_D(2) * mu_lb); % reynolds number for channel flow [] ALEX CITE SOURCE
-        Pr_l = (cp_l * mu_lb) / k_l; % prantl number [] ALEX CITE SOURCE
-        Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl / T_l) ^ -.3; % nusselt number [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19).
-        h_l = (Nu_l * k_l) / hydraulic_D(2); % liquid film coefficient [W/m^2-K] ALEX CITE SOURCE
-        
-        % Step 8: Calculate liquid-side convective heat flux
-        qdot_l = h_l * (T_wl - T_l); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
-    
-        % Step 9: Check for convergence and continue loop / next step
-        if abs(qdot_g - qdot_l) > qdot_tolerance % check for tolerance
-    
-            % convergence loop
-            if qdot_g - qdot_l > 0
-                T_wg_mn = T_wg;
-            else 
-                T_wg_mx = T_wg;
-            end 
-            T_wg = (T_wg_mx + T_wg_mn) / 2;
-    
-            counter = counter + 1;
+    % Step 8: Calculate liquid-side convective heat flux
+    qdot_l = h_l_t * (T_wl_t - T_l_t); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
+
+    % Step 9: Check for convergence and continue loop / next step
+    if abs(qdot_g_l - qdot_l) > qdot_tolerance % check for tolerance
+
+        % convergence loop
+        if qdot_g_l - qdot_l > 0
+            T_wg_mn = T_wg_t;
         else 
-            fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg)
-            
-            converged = 1; % end loop
-        end
-    end
-% 
-%     % structural calculations for channel geometry...
-%     % if structurally sound, end loop & apply saftey factor
-%     % else, continue loop & increase wall thickness
-% %end
-% \
+            T_wg_mx = T_wg_t;
+        end 
+        T_wg_t = (T_wg_mx + T_wg_mn) / 2;
 
-h_g_t = h_g % gass film coefficient at the throat
-h_l_t = h_l % liquid film coefficient at the throat
+        counter = counter + 1;
+    else 
+        fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg_t)
+        
+        converged = 1; % end loop
+    end
+end
+
 %% PLOT OUTPUTS
 
 figure('Name', 'Temperature Plot');
