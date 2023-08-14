@@ -22,6 +22,7 @@ Outputs:
 % set conical half angle
 if geometry_type == "conical"
     theta_i = conical_half_angle;
+    theta_e = conical_half_angle;
 end
 
 % convert angle inputs to radians
@@ -219,4 +220,13 @@ title('Engine Contour Plot')
 xlabel('Inches X')
 ylabel('Inches Y')
 axis([x_total(1)-L_total*.1 x_total(end)+L_total*.1 -L_total*.6 L_total*.6])
+<<<<<<< Updated upstream
 hold off
+=======
+pbaspect([1 1 1])
+hold off
+
+%% Discretize into equal spaced points
+
+[x_contour, r_contour, L_seg] = splitContour(x_total, r_total, resolution, debug);
+>>>>>>> Stashed changes

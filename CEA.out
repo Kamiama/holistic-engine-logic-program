@@ -9,10 +9,17 @@
 
 
 
+<<<<<<< Updated upstream
  problem rocket eq
      p(psi) = 300
      o/f = 1.5
      pip = 31.5789
+=======
+ problem rocket fr
+     p(psi) = 100
+     o/f = 1.2
+     pip = 12.6767
+>>>>>>> Stashed changes
  reac
      fuel = C3H8O,1propanol t(K) = 293.150 wt% = 100.000
      ox = O2(L) t(K) = 90.170
@@ -24,9 +31,15 @@
 
  TRACE= 0.00E+00  S/R= 0.000000E+00  H/R= 0.000000E+00  U/R= 0.000000E+00
 
+<<<<<<< Updated upstream
  Pc,BAR =    20.684191
 
  Pc/P =    31.5789
+=======
+ Pc,BAR =     6.894730
+
+ Pc/P =    12.6767
+>>>>>>> Stashed changes
 
  SUBSONIC AREA RATIOS =
 
@@ -119,6 +132,7 @@
      O               O2              
 
 
+<<<<<<< Updated upstream
  O/F =   1.500000
 
                        EFFECTIVE FUEL     EFFECTIVE OXIDANT        MIXTURE
@@ -137,6 +151,21 @@
  Pinf/Pt = 1.746163
    2    2    2974.175     -14.853     -10.093     -17.424
    3    5    1912.094     -13.711     -10.710     -22.451
+=======
+ O/F =   1.200000
+
+                       EFFECTIVE FUEL     EFFECTIVE OXIDANT        MIXTURE
+ ENTHALPY                  h(2)/R              h(1)/R               h0/R
+ (KG-MOL)(K)/KG       -0.54666124E+03     -0.48783267E+02     -0.27509143E+03
+
+ KG-FORM.WT./KG             bi(2)               bi(1)               b0i
+  *C                   0.49920942E-01      0.00000000E+00      0.22691337E-01
+  *H                   0.13312251E+00      0.00000000E+00      0.60510233E-01
+  *O                   0.16640314E-01      0.62502344E-01      0.41655967E-01
+
+ POINT ITN      T            C           H           O 
+   1   21    2646.932     -13.524      -9.894     -19.270
+>>>>>>> Stashed changes
 
 
 
@@ -144,9 +173,13 @@
 
               THEORETICAL ROCKET PERFORMANCE ASSUMING EQUILIBRIUM
 
+<<<<<<< Updated upstream
            COMPOSITION DURING EXPANSION FROM INFINITE AREA COMBUSTOR
 
  Pin =   300.0 PSIA
+=======
+ Pin =   100.0 PSIA
+>>>>>>> Stashed changes
  CASE =                
 
              REACTANT                    WT FRACTION      ENERGY      TEMP
@@ -154,6 +187,7 @@
  FUEL        C3H8O,1propanol              1.0000000   -255622.181    293.150
  OXIDANT     O2(L)                        1.0000000    -12979.000     90.170
 
+<<<<<<< Updated upstream
  O/F=    1.50000  %FUEL= 40.000000  R,EQ.RATIO= 1.507359  PHI,EQ.RATIO= 1.597410
 
                  CHAMBER   THROAT     EXIT
@@ -173,10 +207,30 @@
  GAMMAs            1.1513   1.1577   1.2167
  SON VEL,M/SEC     1206.0   1165.1    949.5
  MACH NUMBER        0.000    1.000    2.759
+=======
+ O/F=    1.20000  %FUEL= 45.454545  R,EQ.RATIO= 1.815773  PHI,EQ.RATIO= 1.996763
+
+                 CHAMBER   THROAT     EXIT
+ Pinf/P            1.0000   1.7971   12.677
+ P, BAR            6.8947   3.8367  0.54389
+ T, K             2646.93  2364.27  1595.71
+ RHO, KG/CU M    5.8816-1 3.6642-1 7.6962-2
+ H, KJ/KG        -2287.25 -2937.09 -4632.51
+ U, KJ/KG        -3459.51 -3984.17 -5339.21
+ G, KJ/KG        -37594.9 -34474.3 -25917.8
+ S, KJ/(KG)(K)    13.3391  13.3391  13.3391
+
+ M, (1/n)          18.774   18.774   18.774
+ Cp, KJ/(KG)(K)    2.3181   2.2786   2.1175
+ GAMMAs            1.2362   1.2413   1.2645
+ SON VEL,M/SEC     1203.8   1140.0    945.3
+ MACH NUMBER        0.000    1.000    2.291
+>>>>>>> Stashed changes
 
  TRANSPORT PROPERTIES (GASES ONLY)
    CONDUCTIVITY IN UNITS OF MILLIWATTS/(CM)(K)
 
+<<<<<<< Updated upstream
  VISC,MILLIPOISE  0.99783  0.95287  0.69642
 
   WITH EQUILIBRIUM REACTIONS
@@ -212,6 +266,29 @@
  *O               0.00183  0.00088  0.00000
  *OH              0.02255  0.01459  0.00009
  *O2              0.00174  0.00085  0.00000
+=======
+ VISC,MILLIPOISE  0.84197  0.77584  0.58354
+
+  WITH FROZEN REACTIONS
+
+ Cp, KJ/(KG)(K)    2.3181   2.2786   2.1175
+ CONDUCTIVITY      3.3287   2.9977   2.0672
+ PRANDTL NUMBER    0.5864   0.5897   0.5978
+
+ PERFORMANCE PARAMETERS
+
+ Ae/At                      1.0000   2.5062
+ CSTAR, M/SEC               1650.5   1650.5
+ CF                         0.6907   1.3122
+ Ivac, M/SEC                2058.5   2492.1
+ Isp, M/SEC                 1140.0   2165.8
+
+ MOLE FRACTIONS
+
+ *CO             0.36562   *CO2            0.06038   *H              0.00917
+ *H2             0.26919   H2O             0.29291   *O              0.00005
+ *OH             0.00265   *O2             0.00002
+>>>>>>> Stashed changes
 
   * THERMODYNAMIC PROPERTIES FITTED TO 20000.K
 

@@ -20,7 +20,12 @@ boiling point.
 %}
 
 clear;
+<<<<<<< Updated upstream
 clc;
+=======
+%clc;
+%close all;
+>>>>>>> Stashed changes
 
 %% Import Data
 % import input properties
@@ -67,6 +72,12 @@ file_name = strcat(run_description, write_date); % output file name
         sizeCooling = 1;
     end
 
+<<<<<<< Updated upstream
+=======
+    resolution_contour = 50;
+    resolution_throttle = 7;
+
+>>>>>>> Stashed changes
 %% Parse Variables & Define Constants
 % parse & convert input properties
 

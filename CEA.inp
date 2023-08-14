@@ -1,7 +1,14 @@
+<<<<<<< Updated upstream
 problem rocket eq
     p(psi) = 300
     o/f = 1.5
     pip = 31.5789
+=======
+problem rocket fr
+    p(psi) = 100
+    o/f = 1.2
+    pip = 12.6767
+>>>>>>> Stashed changes
 reac
     fuel = C3H8O,1propanol t(K) = 293.150 wt% = 100.000
     ox = O2(L) t(K) = 90.170
