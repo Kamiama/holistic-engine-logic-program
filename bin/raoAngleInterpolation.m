@@ -54,8 +54,8 @@ for n = expRatioMin:0.0001:50
 end
 theta_i = thetaNspline(m);
 theta_e = thetaEspline(m);
-% fprintf('thetaN = %.2f deg\n',thetaNout);
-% fprintf('thetaE = %.2f deg\n',thetaEout);
+% theta_i = 21;
+% theta_e = 15;
 
 %% angle splines
 % eyeballing theta values for certain expansion ratios from 
@@ -63,7 +63,13 @@ theta_e = thetaEspline(m);
 
 % plot
 
+<<<<<<< Updated upstream
 if debugPlot
+=======
+if debug
+    fprintf('thetaN = %.2f deg\n', theta_i);
+    fprintf('thetaE = %.2f deg\n', theta_e);
+>>>>>>> Stashed changes
     figure(2)
     semilogx(expRatio2,thetaNspline,'r-');
     hold on;
