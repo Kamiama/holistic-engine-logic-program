@@ -18,11 +18,11 @@ k = 163; %Thermal Conductivity (W/(m K))
 mdot = 2.7202; %Total Propellant Massflowrate (lbm/s)
 %cf = .01; %Coefficient of Friction
 roughness_table = readmatrix(pwd + "/surface_roughness.xlsx",'Range','A12:E16');
-e = [roughness_table(2,2), roughness_table(5,2)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
+e = [roughness_table(2,2), roughness_table(2,5)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
 %Channel Geometery
-t = .5; %Inner wall thickness (mm)
-Rib_height = [2.75 1.5 2.4]; %Rib Height (mm) [1 min 2]
-chan_width = [3 1 2]; % Width of Channel (mm) [1 min 2]
+t = 1; %Inner wall thickness (mm)
+Rib_height = [3.5 1.4 3.5]; %Rib Height (mm) [1 min 2]
+chan_width = [5.5 1.6 4]; % Width of Channel (mm) [1 min 2]
 
 %Inlet Parameters and coolant definition
 P_inlet = 500; %Absolute inlet pressure (psia)
@@ -95,12 +95,8 @@ P_x = zeros(1,size(x,2));
 if coolantdirection == 1
     P_x(size(x,2)) = P_inlet;
     for i = 1:size(x,2)-1
-        j = size(x,2)-i; 
-        if i < size(x_chamber,2)
-            ed = e(2)/dh_x(j+1); %90 degrees
-        else
-            ed = e(1)/dh_x(j+1); %45 degrees
-        end
+        j = size(x,2)-i;  
+        ed = e/dh_x(j+1);
         Re = (rho * v_x(j+1)*(dh_x(j+1) * .001))/ mew;
         f = moody(ed, Re);
         cf = f/4;
