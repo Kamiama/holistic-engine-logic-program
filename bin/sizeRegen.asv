@@ -57,7 +57,7 @@ CEA_input_name = 'AAAAAA';
 
 %% SIMULATION PARAMETERS (INPUTS)
 plots = 0; %Do ansys or not ???? DUmb name
-steps = 10; % Number of steps along chamber (Change resolution of simulation)
+steps = 100; % Number of steps along chamber (Change resolution of simulation)
 qdot_tolerance = 0.0001; % set heattransfer convergence tolerance
 
 
@@ -356,16 +356,16 @@ while ~(converged)
         counter = counter + 1;
     else 
         fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg_t)
-
+        
         % Fin heat transfer, adiabatic tip, Biot << 0.1
-        T_base = T_wl_t;                      % Temperature at fin base
+        T_base = T_wl;                      % Temperature at fin base
         P_fin = 2 * deltax + 2 * w_c(2);    % Fin perimeter (step distance & channel width)
         A_c_fin = w_c(2) * deltax;          % Fin area at current step
-        m_fin = sqrt(h_l_t * P_fin / (k_w * A_c_fin));                % Fin m
-        M_fin = sqrt(h_l_t * P_fin * k_w * A_c_fin) * (T_base - T_l_t); % Fin M
+        m_fin = sqrt(h_l * P_fin / (k_w * A_c_fin));                % Fin m
+        M_fin = sqrt(h_l * P_fin * k_w * A_c_fin) * (T_base - T_l); % Fin M
         fin_q = M_fin * tanh(m_fin * h_c(2));               % Fin heat transfer rate
         eff_fin = tanh(m_fin * h_c(2)) / (M_fin * h_c(2));  % Fin efficienct
-        biot_fin = h_l_t / k_w * (0.5 * (w_c(2) + h_c(2)));                      % Biot number to test assumptions
+        biot_fin = h_l / k_w * w_c(2);                      % Biot number to test assumptions
 
         converged = 1; % end loop
     end
