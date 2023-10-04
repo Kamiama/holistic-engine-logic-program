@@ -57,52 +57,60 @@ CEA_input_name = 'AAAAAA';
 
 %% SIMULATION PARAMETERS (INPUTS)
 plots = 0; %Do ansys or not ???? DUmb name
-steps = 10; % Number of steps along chamber (Change resolution of simulation)
+steps = 100; % Number of steps along chamber (Change resolution of simulation)
 qdot_tolerance = 0.0001; % set heattransfer convergence tolerance
 
 
 %% ENGINE DEFINITION (INPUTS)
 
 % Engine Contour
-contour = readmatrix('contour.xlsx'); % import engine contour
+contour = readmatrix('contour_100pts.xlsx'); % import engine contour
 r_contour = (contour(:,2) * u.IN2M)'; % contour radius [m]
 x_contour = (contour(:,1) * u.IN2M)'; % contour x-axis [m]
 [R_t, t_local] = min(r_contour); % throat radius, throat location [m]
-chamber_length = 0.0254 * 4.5427; % chamber length (m) [conversion * in]
-converging_length = 0.0254 * 1.8278; %  converging length (m) [conversion * in]
-diverging_length = 0.0254 * 1.7191; % diverging length (m) [conversion * in]
+chamber_length = 0.0254 * 5.205; % chamber length (m) [conversion * in]
+converging_length = 0.0254 * 1.8251; %  converging length (m) [conversion * in]
+diverging_length = 0.0254 * 1.8557; % diverging length (m) [conversion * in]
 total_length = chamber_length + converging_length + diverging_length; % total length (mm) 
 
 % Propulsion Parameters
-P_c = 275; % chamber pressure [psi] 
-P_e = 18.5; % exit pressure [psi]
-m_dot = 12 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
+P_c = 250; % chamber pressure [psi] 
+P_e = 17; % exit pressure [psi]
+m_dot = 10 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 fuel = 'C3H8O,2propanol'; % fuel definition
 oxidizer = 'O2(L)'; % oxidizer definition
 fuel_weight = 0; % ???  
 fuel_temp = 273.15; % [K]
 oxidizer_temp = 90.17; % [K]
-OF = 1.3; % oxidizer/fuel ratio
+OF = 1.2; % oxidizer/fuel ratio
 
 % material properties
-k_w = 103; % thermal conductivity [W/m-K]
-E = 70E9; % [Pa] ???
-CTE = 27E-6; % in 1/K ????
-nu = 0.3; %??????
-e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
+k_w = 200; % thermal conductivity [W/m-K]
+E = 76E9; % [Pa] 
+CTE = 22.4E-6; % in 1/K 
+nu = 0.3; % poissons ratio (guess)
+%e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
+roughness_table = readmatrix(pwd + "/bin/surface_roughness.xlsx",'Range','A12:E16');
+e = [roughness_table(2,2), roughness_table(5,2)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
 
 % Cooling channel inlet initialization
 coolant = 'Water'; %coolant definition
 inlet_temperature = 293.16; % inlet temperature [K]
+%inlet_temperature = 350; % inlet temperature [K]
 inlet_pressure = 500 * u.PSI2PA; % inlet pressure [PA]
 coolantdirection = 0; % 1: direction opposite of hot gas flow direction
                       % 0: direction same as hot flow gas direction
                         
 % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
-t_w = 0.001;               % inner wall thickness [m]
-h_c = [.0015 .0015 .0015]; % channel height [1 min 2] [m]    
-w_c = [.0025 0.0025 .0025];% channel width [1 min 2] [m]
-num_channels = 40; 
+%t_w = 0.0005; % inner wall thickness [m]
+t_w = [.001 .0005];
+inter_length = .010; % Length where wall thickness will interpolate between chamber and nozzle
+h_c = [.0015 .0014 .0015]; % channel height [1 min 2] [m]    
+w_c = [.0054 .0016 .003227];% channel width [1 min 2] [m]
+num_channels = 46; 
+t_w_c = .001778 ; % channel width at torch igniter
+t_h_c = .003 ; % channel height at torch igniter
+torch_loc = [2.2 3.2 3.7] .* 0.0254; % location of torch changing area [mm] [inch * conversion] [1 min 2]
 
 
 %% Parse variables && initial calculations
@@ -124,18 +132,33 @@ x = 0:deltax:total_length; % length vector
 x_plot = (x - chamber_length - converging_length); % length vector adjusted so that 0 is at the throat (mm)
 
 % Parse engine section length vectors
-x_chamber = []; % chamber length vector
-x_converging = []; % converging length vector
-x_diverging = []; % diverging length vectir
+torch_conv_length = torch_loc(2) - torch_loc(1);
+torch_div_length = torch_loc(3)-torch_loc(2);
+
+x_chamber1 = []; % chamber length vector before igniter
+x_torch_conv = []; % igniter convergence
+x_torch_div = []; % igniter divergence
+x_chamber2 = []; % chamber length vector after igniter
+x_converging = [];% converging length vector
+x_diverging = [];% diverging length vectir
 for i = x 
-    if i <= chamber_length
-    x_chamber = [x_chamber i];
+    if i <= torch_loc(1)
+        x_chamber1 = [x_chamber1 i];
+    end
+    if (torch_loc(1) < i) && (i <= torch_loc(2))
+        x_torch_conv = [x_torch_conv i];
+    end
+    if (torch_loc(2) < i) && (i <= torch_loc(3))
+        x_torch_div = [x_torch_div i];
+    end
+    if (torch_loc(3) < i) && (i <= chamber_length)
+        x_chamber2 = [x_chamber2 i];
     end 
     if (chamber_length < i) && (i <= chamber_length + converging_length)
-    x_converging = [x_converging i];
+        x_converging = [x_converging i];
     end 
     if i > (chamber_length + converging_length)
-    x_diverging = [x_diverging i];
+        x_diverging = [x_diverging i];
     end 
 end 
 
@@ -145,34 +168,64 @@ p_wet = 2*w_c + 2*h_c; % wetted perimeter of the pipe (m) [1 min 2]
 hydraulic_D = (4.*A)./p_wet; % hydraulic diameter (m) [1 min 2]
 
 % parse channel geometry over channel length
-w_c_chamber = ones(1,size(x_chamber,2)).*w_c(1); % channel width over chamber length (constant)
+w_c_chamber1 = ones(1,size(x_chamber1,2)).*w_c(1); % channel width over chamber length (constant)
+w_c_torch_conv = ((t_w_c-w_c(1))/(torch_conv_length)).*(x_torch_conv -x_torch_conv(1)) ... 
+    + ones(1,size(x_torch_conv,2)).*w_c(1); % channel width over converging torch section
+w_c_torch_div = ((w_c(1)-t_w_c)/(torch_div_length)).*(x_torch_div-x_torch_div(1))... 
+    + ones(1,size(x_torch_div,2)).*t_w_c; % channel width over diverging torch section
+w_c_chamber2 = ones(1,size(x_chamber2,2)).*w_c(1); % channel width over chamber length (constant)
 w_c_converging = ((w_c(2)-w_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
          + ones(1,size(x_converging,2)).*w_c(1); % channel width over converging length (linear interpolation)
 w_c_diverging = ((w_c(3)-w_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
         + ones(1,size(x_diverging,2)).*w_c(2);   % channel width over diverging length (linear interpolation)
-w_c_x = [w_c_chamber w_c_converging w_c_diverging]; % combine channel width vectors
+w_c_x = [w_c_chamber1 w_c_torch_conv w_c_torch_div w_c_chamber2 w_c_converging w_c_diverging]; % combine channel width vectors
 
-h_c_chamber = ones(1,size(x_chamber,2)).*h_c(1); % channel height over chamber length (constant)
+h_c_chamber1 = ones(1,size(x_chamber1,2)).*h_c(1); % channel height over chamber length (constant)
+h_c_torch_conv = ((t_h_c-h_c(1))/(torch_conv_length)).*(x_torch_conv -x_torch_conv(1)) ... 
+    + ones(1,size(x_torch_conv,2)).*h_c(1); % channel height over converging torch section
+h_c_torch_div = ((h_c(1)-t_h_c)/(torch_div_length)).*(x_torch_div-x_torch_div(1))... 
+    + ones(1,size(x_torch_div,2)).*t_h_c; % channel height over diverging torch section
+h_c_chamber2 = ones(1,size(x_chamber2,2)).*h_c(1); % channel height over chamber length (constant
 h_c_converging = ((h_c(2)-h_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
      + ones(1,size(x_converging,2)).*h_c(1);    % channel height over converging length (linear interpolation)
 h_c_diverging = ((h_c(3)-h_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
      + ones(1,size(x_diverging,2)).*h_c(2); % channel height over diverging length (linear interpolation)
-h_c_x = [h_c_chamber h_c_converging h_c_diverging]; % combine channel height vectors
+h_c_x = [h_c_chamber1 h_c_torch_conv h_c_torch_div h_c_chamber2 h_c_converging h_c_diverging]; % combine channel height vectors
 
 A_x = (w_c_x .* h_c_x); % channel area vector over channel length [m^2]
 p_wet_x = 2.*w_c_x + 2 .* h_c_x; % wet perimeter over channel length [m]
 hydraulic_D_x = ((4.*(A_x))./p_wet_x); % bydraulic Diameter over channel length [m]
 
+x_to_chamber2 = [x_chamber1 x_torch_conv x_torch_div];
+x_to_converging = [x_to_chamber2 x_chamber2];
+x_to_throat = [x_to_converging x_converging];
 % calculate channel flow
 m_dot_CHANNEL = m_dot / num_channels; % mass flow of channel (EQ 6.31)
 
+% Wall thickness vector
+x_inter_wall = [];
+x_nozzle_wall = [];
+for i = x
+    if ((chamber_length) < i) && (i <= chamber_length + inter_length)
+        x_inter_wall = [x_inter_wall i];
+    end
+    if(chamber_length + inter_length < i)
+        x_nozzle_wall = [x_nozzle_wall i];
+    end
+end
+
+t_w_chamber = t_w(1) * ones(size(x_to_converging));
+t_w_inter = ((t_w(2)-t_w(1))/(inter_length)).*(x_inter_wall -x_inter_wall(1)) ... 
+    + ones(size(inter_length)).*t_w(1); % channel width over converging torch section
+t_w_nozzle = t_w(2) .* ones(size(x_nozzle_wall));
+t_w_x = [t_w_chamber t_w_inter t_w_nozzle];
 
 %% CHAMBER HEAT TRANSFER CALCULATIONS
 
 % Step 1: Prescribe initial properties
 
 % Prescribe area ratios
-r_interpolated = interp1(x_contour,r_contour,x_plot); % linearly interpolate radius vector  
+r_interpolated = interp1(x_contour,r_contour,x_plot,'linear','extrap'); % linearly interpolate radius vector  
 subsonic_area_ratios = (pi * r_interpolated(x_plot < 0) .^ 2) / A_t; % subsonic area ratios on discretized points
 supersonic_area_ratios = (pi * r_interpolated(x_plot > 0) .^ 2) / A_t; %  supersonic area ratios on discretized points
 A_ratio = [subsonic_area_ratios, supersonic_area_ratios]; % area ratio vector [sub, sup]
@@ -202,6 +255,14 @@ T_g = zeros(1, points);     % combustion temperature
 mu_g = zeros(1, points);    % combustion viscosity 
 Pr_g = zeros(1, points);    % combustion prantl number
 cp_g = zeros(1, points);    % combustion coefficient of pressure ???
+
+% stress matricies
+sigma_t = zeros(1,points); % tangential stress
+sigma_tp = zeros(1,points); % tangential stress pressure
+sigma_tt = zeros(1,points); % tangential stress temp
+sigma_l = zeros(1,points); % longitudinal stress
+sigmab = zeros(1,points); % buckling stress
+sigma_v = zeros(1,points); % von mises stress
 
 % call cea for all area ratios
 i = 1;
@@ -238,7 +299,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
     
         % Step 6: Calculate liquid wall temperature
-        T_wl(i) = T_wg(i) - qdot_g(i) * t_w / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
+        T_wl(i) = T_wg(i) - qdot_g(i) * t_w_x(i) / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
     
         % Step 7: Calculate liquid film coefficient
         % run coolprop to get coolant properties
@@ -251,10 +312,10 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         Re_l = (rho_l(i) * v(i) * hydraulic_D_x(i)) / mu_lb; % reynolds number for channel flow [N/A] (Huzel and Huang , pg 90)
         Pr_l = (cp_l * mu_lb) / k_l; % prantl number [N/A] (Huzel and Huang, pg 90) 
         Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl / T_l) ^ -.3; % nusselt number [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19). ****
-        h_l = (Nu_l * k_l) / hydraulic_D_x(i); % liquid film coefficient [W/m^2-K] (Heister EQ 6.19)
+        h_l(i) = (Nu_l * k_l) / hydraulic_D_x(i); % liquid film coefficient [W/m^2-K] (Heister EQ 6.19)
     
         % Step 8: Calculate liquid-side convective heat flux
-        qdot_l(i) = h_l * (T_wl(i) - T_l(i)); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
+        qdot_l(i) = h_l(i) * (T_wl(i) - T_l(i)); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
 
         % Step 9: Check for convergence and continue loop / next step
         if abs(qdot_g(i) - qdot_l(i)) > qdot_tolerance % check for tolerance
@@ -275,7 +336,14 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 T_l(i+1) = T_l(i) + (1 / (m_dot_CHANNEL * cp_l)) * qdot_g(i) * wall_area; % new liquid temperature [K] (Heister EQ 6.39)
                 
                 % Use moody diagram to find coefficient of friction
-                ed = e/(hydraulic_D_x(i)*1000); % relative roughness
+                if (i < size(x_chamber1,2)) || (((size(x_to_chamber2,2)) <= i) && (i < size(x_to_converging,2)))
+                    ed = e(2)/(hydraulic_D_x(i)*1000); %90 degrees
+              
+                else
+                    ed = e(1)/(hydraulic_D_x(i)*1000); %45 degrees
+                    
+                end
+                %ed = e/(hydraulic_D_x(i)*1000); % relative roughness
                 f = moody(ed, Re_l); % friction factor
                 cf = f/4; % friction coefficient
 
@@ -284,7 +352,15 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 else
                     deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % change in pressure (Heister 6.36)
                 end
-        
+                
+                % calculate stesses 
+                sigma_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
+                sigma_tt(i) = (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w);
+                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w); % tangential stress
+                %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
+                sigma_l(i) = E*CTE*(T_wl(i)-300);
+                %sigmab = ??? ; % buckling stress
+                sigma_v(i) = sqrt(sigma_l(i)^2 + sigma_t(i)^2 - sigma_l(i)*sigma_t(i));
                 % prepare for next step
                 P_l(i+1) =   P_l(i) - deltaP; % Update pressure for next iteration
                 T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
@@ -301,12 +377,12 @@ end
 [c_star_t, ~, ~, M_t, gamma_t, P_g_t, T_g_t, ~, mu_g_t, Pr_g_t, ~, ~, ~, cp_g_t] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); % ******
 
 % Steps 2 & 3: Set channel inlet properties
-P_l_t = (P_l(length([x_chamber, x_converging])) + P_l(length([x_chamber, x_converging]) + 1) ) / 2; % coolant pressure at throat [Pa] (interpolated)
-T_l_t = (T_l(length([x_chamber, x_converging])) + T_l(length([x_chamber, x_converging]) + 1) ) / 2; % coolant tepemperature at throat [K] (interpolated)
+P_l_t = (P_l(length(x_to_throat)) + P_l(length(x_to_throat) + 1) ) / 2; % coolant pressure at throat [Pa] (interpolated)
+T_l_t = (T_l(length(x_to_throat)) + T_l(length(x_to_throat) + 1) ) / 2; % coolant tepemperature at throat [K] (interpolated)
 
 % Step 4: Take hot wall temperature guess and initialize loop
 
-T_wg_t = (T_wg(length([x_chamber, x_converging])) + T_wg(length([x_chamber, x_converging]) + 1) ) / 2 % initial guess of wall side temperature at throat [K] (interpolated) 
+T_wg_t = (T_wg(length(x_to_throat)) + T_wg(length(x_to_throat) + 1) ) / 2; % initial guess of wall side temperature at throat [K] (interpolated) 
 T_wg_mn = 294.15; % minimum temperature bound
 T_wg_mx = 2000; % maximum temperature bound
 
@@ -317,14 +393,14 @@ counter = 0; % counter for loop
 % start loop to converge on wall temperature
 while ~(converged)
     % Step 5: Calculate gas film coefficient and gas-side convective heat flux
-    sigma = (.5 * T_wg_t / T_g_t * (1 + (gamma_t - 1) / 2 * M_t ^ 2) + .5) ^ -.68 * (1 + (gamma_t - 1) / 2 * M_t ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
+    sigma = (.5 * T_wg_t / T_g(1) * (1 + (gamma_t - 1) / 2 * M_t ^ 2) + .5) ^ -.68 * (1 + (gamma_t - 1) / 2 * M_t ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
     h_g_t = (0.026 / D_t ^ 0.2) * (mu_g_t ^ 0.2 * cp_g_t / Pr_g_t ^ 0.6) * (P_c / c_star_t) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
     r = Pr_g_t ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
     T_r = T_g_t * (1 + (gamma_t - 1) / 2 * r * M_t ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
     qdot_g_l = h_g_t * (T_r - T_wg_t); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
 
     % Step 6: Calculate liquid wall temperature
-    T_wl_t = T_wg_t - qdot_g_l * t_w / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
+    T_wl_t = T_wg_t - qdot_g_l * t_w(2) / k_w; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
 
     % Step 7: Calculate liquid film coefficient
     % run coolprop to get coolant properties
@@ -339,8 +415,18 @@ while ~(converged)
     Nu_l = 0.023 * (Re_l ^ .8) * (Pr_l ^ .4) * (T_wl_t / T_l_t) ^ -.3; % nusselt number [N/A] - applicable for Re > 10,000, .7 < Pr < 160 (Heister EQ 6.19).
     h_l_t = (Nu_l * k_l) / hydraulic_D(2); % liquid film coefficient [W/m^2-K] (Heister EQ 6.19)
     
+    % Step 8.5: Fin heat transfer, adiabatic tip, Biot << 0.1
+    T_base = T_wl_t;                      % Temperature at fin base
+    P_fin = 2 * deltax + 2 * w_c(2);    % Fin perimeter (step distance & channel width)
+    A_c_fin = w_c(2) * deltax;          % Fin area at current step
+    m_fin = sqrt(h_l_t * P_fin / (k_w * A_c_fin));                % Fin m
+    M_fin = sqrt(h_l_t * P_fin * k_w * A_c_fin) * (T_base - T_l_t); % Fin M
+    fin_q = M_fin * tanh(m_fin * h_c(2));               % Fin heat transfer rate
+    eff_fin = tanh(m_fin * h_c(2)) / (M_fin * h_c(2));  % Fin efficienct
+    biot_fin = h_l_t / k_w * (0.5 * (w_c(2) + h_c(2)));                      % Biot number to test assumptions
+
     % Step 8: Calculate liquid-side convective heat flux
-    qdot_l = h_l_t * (T_wl_t - T_l_t); % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
+    qdot_l = h_l_t * (T_wl_t - T_l_t) + fin_q; % liquid convective heat flux [W/m^2] (Heister EQ 6.29).
 
     % Step 9: Check for convergence and continue loop / next step
     if abs(qdot_g_l - qdot_l) > qdot_tolerance % check for tolerance
@@ -356,16 +442,6 @@ while ~(converged)
         counter = counter + 1;
     else 
         fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg_t)
-
-        % Fin heat transfer, adiabatic tip, Biot << 0.1
-        T_base = T_wl_t;                      % Temperature at fin base
-        P_fin = 2 * deltax + 2 * w_c(2);    % Fin perimeter (step distance & channel width)
-        A_c_fin = w_c(2) * deltax;          % Fin area at current step
-        m_fin = sqrt(h_l_t * P_fin / (k_w * A_c_fin));                % Fin m
-        M_fin = sqrt(h_l_t * P_fin * k_w * A_c_fin) * (T_base - T_l_t); % Fin M
-        fin_q = M_fin * tanh(m_fin * h_c(2));               % Fin heat transfer rate
-        eff_fin = tanh(m_fin * h_c(2)) / (M_fin * h_c(2));  % Fin efficienct
-        biot_fin = h_l_t / k_w * (0.5 * (w_c(2) + h_c(2)));                      % Biot number to test assumptions
 
         converged = 1; % end loop
     end
@@ -397,28 +473,8 @@ legend('T_w_g', 'T_w_l', 'T_l', 'Chamber Contour', 'Location', 'southoutside', '
 title('Temperature Distribution')
 xlabel('Location [mm]')
 
-
-figure(2)
-
-
-subplot(2,2,1)
-plot(x_plot.* 1000, A_x * 1000000);
-title("Channel Area [mm^2]")
-xlabel("Location [mm]")
-subplot(2,2,2)
-plot(x_plot.* 1000, v);
-title("Coolant Velocity [m/s]")
-xlabel("Location [mm]")
-subplot(2,2,3)
-plot(x_plot.* 1000, P_l * 1/6894.757)
-title("Liquid Pressure [psi]")
-xlabel("Location [mm]")
-subplot(2,2,4)
-plot(x_plot.*1000, h_g)
-title("film coeffcient [W/m^2-K]")
-xlabel("Location [mm]");
-
-figure('Name', 'Heat Flux Plot');
+figure('Name', 'Heat Transfer Plots');
+subplot(2,2,[1,2])
 hold on;
 % heat flux plot
 %subplot(2,1,2)
@@ -434,10 +490,116 @@ ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
 
-legend('Convective Heat Flux', 'Chamber Contour', 'Location', 'southoutside', 'Orientation', 'horizontal')
+legend('Convective Heat Flux', 'Chamber Contour')
 title('Heat Flux Distribution')
 xlabel('Location [mm]')
+
+subplot(2,2,3)
+plot(x_plot.*1000, h_g)
+title("Gas Film Coeffcient [W/m^2-K]")
+xlabel("Location [mm]");
+grid on
+subplot(2,2,4)
+plot(x_plot.*1000, h_l)
+title("Liquid Film Coefficient [W/m^2-K]")
+grid on
+
+
+
+figure('Name','Water Flow')
+subplot(2,2,[1,2])
+plot(x_plot.* 1000, P_l * 1/6894.757)
+title("Liquid Pressure Loss")
+xlabel("Location [mm]")
+ylabel("Pressure [PSI]")
+yyaxis right
+plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
+ylabel('Radius [mm]')
+set(gca, 'Ycolor', 'k')
+axis equal;
+legend("Pressure Curve"," Chamber Contour")
+grid on
+
+subplot(2,2,3)
+plot(x_plot.* 1000, v);
+title("Coolant Velocity [m/s]")
+xlabel("Location [mm]")
+grid on
+subplot(2,2,4)
+plot(x_plot.*1000, T_l)
+title("Coolant Temperature [K]");
+grid on
+
+
+
+
+figure('Name','Channel Geometry');
+subplot(2,2,[1,2]);
+hold on
+plot(x_plot.* 1000, w_c_x .*1000);
+plot(x_plot.*1000, h_c_x .*1000);
+title("Channel Dimensions");
+xlabel("Location [mm]");
+ylabel("Channel Dimensions [mm]")
+yyaxis right
+plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
+ylabel('Chamber Contour [mm]')
+set(gca, 'Ycolor', 'k')
+axis equal;
+legend('Channel Width', 'Channel Height', 'Chamber Contour')
+grid on
+
+subplot(2,2,3);
+plot(x_plot.*1000, t_w_x .* 1000);
+title("Wall thickness [mm]");
+xlabel("Location [mm]");
+grid on
+subplot(2,2,4);
+plot(x_plot.* 1000, A_x .* 1000000);
+title("Channel Area [mm^2]");
+xlabel("Location [mm]");
+grid on
+
+
+
     
+figure('Name', 'Structural results')
+subplot(2,2,[1,2])
+plot(x_plot.* 1000, sigma_v*0.000001,'g')
+title("Von Mises Stress")
+xlabel("Location [mm]")
+ylabel("[MPA]")
+yyaxis right
+plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
+ylabel('Radius [mm]')
+set(gca, 'Ycolor', 'k')
+axis equal;
+legend('Von Mises Stress','Chamber Contour')
+grid on
+subplot(2,2,3)
+hold on
+plot(x_plot.* 1000, sigma_t*0.000001,"b");
+plot(x_plot.* 1000, sigma_tp*0.000001,"m");
+plot(x_plot.* 1000, sigma_tt*0.000001,"r");
+legend("Total Stress", "Pressure contribution", "Thermal Contribution")
+title("Tangential Stress (MPA)")
+hold off
+grid on
+subplot(2,2,4)
+plot(x_plot.* 1000, sigma_l*0.000001);
+title("Longitudinal Stress (MPA)")
+xlabel("Location [mm]")
+grid on
+% subplot(2,2,3)
+% plot(x_plot.* 1000, sigmab*0.000001)
+% title("Buckling Stress (MPA)")
+% xlabel("Location [mm]")
+
+
+
+
+
+
 %         %Step 12: Structural Analysis Checks
 %         St = .5*(Pl- P_gas)*(width/wallthick)^2 + (E*a*gasheattransfer*wallthick)/(2*(1-v)kw); %Combined tangential stresses: Heister Eq 6.33 page 207
 %         Sl = E*a*(Twl-fuel_temp); %Longtudinal thermal stress (Huzel and Huang, EQ 2-28, pg 92) The temperatures used here may not right for determining the delta T in this equation.

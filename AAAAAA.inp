@@ -1,6 +1,6 @@
 problem rocket fr
-    p(bar) = 18.9606
-    o/f = 1.3
+    p(bar) = 17.2369
+    o/f = 1.2
     sup = 1
 reac
     fuel = C3H8O,2propanol t(K) = 273.150
