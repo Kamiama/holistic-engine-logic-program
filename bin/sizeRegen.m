@@ -76,7 +76,7 @@ total_length = chamber_length + converging_length + diverging_length; % total le
 % Propulsion Parameters
 P_c = 250; % chamber pressure [psi] 
 P_e = 17; % exit pressure [psi]
-m_dot = 10 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
+m_dot = 5 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 fuel = 'C3H8O,2propanol'; % fuel definition
 oxidizer = 'O2(L)'; % oxidizer definition
 fuel_weight = 0; % ???  
@@ -103,13 +103,21 @@ coolantdirection = 0; % 1: direction opposite of hot gas flow direction
                         
 % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
 %t_w = 0.0005; % inner wall thickness [m]
-t_w = [.001 .0005];
+t_w = [.0005 .0005];
 inter_length = .010; % Length where wall thickness will interpolate between chamber and nozzle
-h_c = [.0015 .0014 .0015]; % channel height [1 min 2] [m]    
-w_c = [.0054 .0016 .003227];% channel width [1 min 2] [m]
-num_channels = 46; 
-t_w_c = .001778 ; % channel width at torch igniter
-t_h_c = .003 ; % channel height at torch igniter
+h_c = [.0015 .001 .0023]; % channel height [1 min 2] [m]    
+w_c = [.0031 .0008 .0015];% channel width [1 min 2] [m]
+num_channels = 62; 
+
+
+%t_w_c = .001778 ; % channel width at torch igniter
+%t_h_c = .003 ; % channel height at torch igniter
+h_c_extra = .001;
+w_c_extra = .001;
+%extra_loc = [chamber_length, chamber_length + converging_length - .011547, chamber_length + converging_length];
+extra_loc = [chamber_length, chamber_length + converging_length - .020, chamber_length + converging_length];
+t_w_c = w_c(1) ; % channel width at torch igniter
+t_h_c =  h_c(1); % channel height at torch igniter
 torch_loc = [2.2 3.2 3.7] .* 0.0254; % location of torch changing area [mm] [inch * conversion] [1 min 2]
 
 
@@ -134,12 +142,16 @@ x_plot = (x - chamber_length - converging_length); % length vector adjusted so t
 % Parse engine section length vectors
 torch_conv_length = torch_loc(2) - torch_loc(1);
 torch_div_length = torch_loc(3)-torch_loc(2);
+conv_1_length = extra_loc(2) - extra_loc(1);
+conv_2_length = extra_loc(3) - extra_loc(2);
 
 x_chamber1 = []; % chamber length vector before igniter
 x_torch_conv = []; % igniter convergence
 x_torch_div = []; % igniter divergence
 x_chamber2 = []; % chamber length vector after igniter
-x_converging = [];% converging length vector
+x_converging1 = [];
+x_diverging1 = [];
+x_converging2 = [];% converging length vector
 x_diverging = [];% diverging length vectir
 for i = x 
     if i <= torch_loc(1)
@@ -154,8 +166,11 @@ for i = x
     if (torch_loc(3) < i) && (i <= chamber_length)
         x_chamber2 = [x_chamber2 i];
     end 
-    if (chamber_length < i) && (i <= chamber_length + converging_length)
-        x_converging = [x_converging i];
+    if (chamber_length < i) && (i <= extra_loc(2))
+        x_converging1 = [x_converging1 i];
+    end 
+    if (extra_loc(2) < i) && (i <= chamber_length + converging_length)
+        x_converging2 = [x_converging2 i];
     end 
     if i > (chamber_length + converging_length)
         x_diverging = [x_diverging i];
@@ -174,11 +189,18 @@ w_c_torch_conv = ((t_w_c-w_c(1))/(torch_conv_length)).*(x_torch_conv -x_torch_co
 w_c_torch_div = ((w_c(1)-t_w_c)/(torch_div_length)).*(x_torch_div-x_torch_div(1))... 
     + ones(1,size(x_torch_div,2)).*t_w_c; % channel width over diverging torch section
 w_c_chamber2 = ones(1,size(x_chamber2,2)).*w_c(1); % channel width over chamber length (constant)
-w_c_converging = ((w_c(2)-w_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
-         + ones(1,size(x_converging,2)).*w_c(1); % channel width over converging length (linear interpolation)
+
+
+w_c_converging1 = ((w_c_extra-w_c(1))/(conv_1_length)).*(x_converging1 -x_converging1(1)) ... 
+         + ones(1,size(x_converging1,2)).*w_c(1); % channel width over converging length (linear interpolation)
+w_c_converging2 = ((w_c(2)-w_c_extra)/(conv_2_length)).*(x_converging2 -x_converging2(1)) ... 
+         + ones(1,size(x_converging2,2)).*w_c_extra; % channel width over converging length (linear interpolation)
+
+
+
 w_c_diverging = ((w_c(3)-w_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
         + ones(1,size(x_diverging,2)).*w_c(2);   % channel width over diverging length (linear interpolation)
-w_c_x = [w_c_chamber1 w_c_torch_conv w_c_torch_div w_c_chamber2 w_c_converging w_c_diverging]; % combine channel width vectors
+w_c_x = [w_c_chamber1 w_c_torch_conv w_c_torch_div w_c_chamber2 w_c_converging1 w_c_converging2 w_c_diverging]; % combine channel width vectors
 
 h_c_chamber1 = ones(1,size(x_chamber1,2)).*h_c(1); % channel height over chamber length (constant)
 h_c_torch_conv = ((t_h_c-h_c(1))/(torch_conv_length)).*(x_torch_conv -x_torch_conv(1)) ... 
@@ -186,11 +208,16 @@ h_c_torch_conv = ((t_h_c-h_c(1))/(torch_conv_length)).*(x_torch_conv -x_torch_co
 h_c_torch_div = ((h_c(1)-t_h_c)/(torch_div_length)).*(x_torch_div-x_torch_div(1))... 
     + ones(1,size(x_torch_div,2)).*t_h_c; % channel height over diverging torch section
 h_c_chamber2 = ones(1,size(x_chamber2,2)).*h_c(1); % channel height over chamber length (constant
-h_c_converging = ((h_c(2)-h_c(1))/(converging_length)).*(x_converging -x_converging(1)) ... 
-     + ones(1,size(x_converging,2)).*h_c(1);    % channel height over converging length (linear interpolation)
+
+
+h_c_converging1 = ((h_c_extra-h_c(1))/(conv_1_length)).*(x_converging1 -x_converging1(1)) ... 
+     + ones(1,size(x_converging1,2)).*h_c(1);    % channel height over converging length (linear interpolation)
+h_c_converging2 = ((h_c(2)-h_c_extra)/(conv_2_length)).*(x_converging2 -x_converging2(1)) ... 
+     + ones(1,size(x_converging2,2)).*h_c_extra;    % channel height over converging length (linear interpolation)
+
 h_c_diverging = ((h_c(3)-h_c(2))/(diverging_length)).*(x_diverging-x_diverging(1))... 
      + ones(1,size(x_diverging,2)).*h_c(2); % channel height over diverging length (linear interpolation)
-h_c_x = [h_c_chamber1 h_c_torch_conv h_c_torch_div h_c_chamber2 h_c_converging h_c_diverging]; % combine channel height vectors
+h_c_x = [h_c_chamber1 h_c_torch_conv h_c_torch_div h_c_chamber2 h_c_converging1 h_c_converging2 h_c_diverging]; % combine channel height vectors
 
 A_x = (w_c_x .* h_c_x); % channel area vector over channel length [m^2]
 p_wet_x = 2.*w_c_x + 2 .* h_c_x; % wet perimeter over channel length [m]
@@ -198,7 +225,7 @@ hydraulic_D_x = ((4.*(A_x))./p_wet_x); % bydraulic Diameter over channel length 
 
 x_to_chamber2 = [x_chamber1 x_torch_conv x_torch_div];
 x_to_converging = [x_to_chamber2 x_chamber2];
-x_to_throat = [x_to_converging x_converging];
+x_to_throat = [x_to_converging x_converging1 x_converging2];
 % calculate channel flow
 m_dot_CHANNEL = m_dot / num_channels; % mass flow of channel (EQ 6.31)
 
@@ -261,8 +288,13 @@ sigma_t = zeros(1,points); % tangential stress
 sigma_tp = zeros(1,points); % tangential stress pressure
 sigma_tt = zeros(1,points); % tangential stress temp
 sigma_l = zeros(1,points); % longitudinal stress
+sigma_ll = zeros(1,points); % longitudinal stress
+sigma_lc = zeros(1,points); % longitudinal stress
 sigmab = zeros(1,points); % buckling stress
 sigma_v = zeros(1,points); % von mises stress
+sigma_vl = zeros(1,points); % von mises stress
+sigma_vc = zeros(1,points); % von mises stress
+
 
 % call cea for all area ratios
 i = 1;
@@ -358,9 +390,12 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 sigma_tt(i) = (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w);
                 sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w); % tangential stress
                 %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
-                sigma_l(i) = E*CTE*(T_wl(i)-300);
+                sigma_lc(i) = E*CTE*(T_wl(i)-T_l(i));
+                sigma_ll(i) = E*CTE*(T_wg(i)-T_l(i));
+
                 %sigmab = ??? ; % buckling stress
-                sigma_v(i) = sqrt(sigma_l(i)^2 + sigma_t(i)^2 - sigma_l(i)*sigma_t(i));
+                sigma_vc(i) = sqrt(sigma_lc(i)^2 + sigma_t(i)^2 - sigma_lc(i)*sigma_t(i));
+                sigma_vl(i) = sqrt(sigma_ll(i)^2 + sigma_t(i)^2 - sigma_ll(i)*sigma_t(i));
                 % prepare for next step
                 P_l(i+1) =   P_l(i) - deltaP; % Update pressure for next iteration
                 T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
@@ -565,7 +600,7 @@ grid on
     
 figure('Name', 'Structural results')
 subplot(2,2,[1,2])
-plot(x_plot.* 1000, sigma_v*0.000001,'g')
+plot(x_plot.* 1000, sigma_vl*0.000001,'g',x_plot.* 1000, sigma_vc*0.000001,'y')
 title("Von Mises Stress")
 xlabel("Location [mm]")
 ylabel("[MPA]")
@@ -574,7 +609,7 @@ plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
-legend('Von Mises Stress','Chamber Contour')
+legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Chamber Contour')
 grid on
 subplot(2,2,3)
 hold on
@@ -586,8 +621,9 @@ title("Tangential Stress (MPA)")
 hold off
 grid on
 subplot(2,2,4)
-plot(x_plot.* 1000, sigma_l*0.000001);
+plot(x_plot.* 1000, sigma_lc*0.000001,x_plot.* 1000, sigma_ll*0.000001);
 title("Longitudinal Stress (MPA)")
+legend("At the channel", "At the lands");
 xlabel("Location [mm]")
 grid on
 % subplot(2,2,3)
