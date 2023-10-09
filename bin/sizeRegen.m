@@ -382,7 +382,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         else 
             if i < points
                 % Step 10: End step & update fluid properties
-                wall_area = 2 * w_c_x(i) * deltax + 2 * h_c_x(i) * deltax;
+                wall_area = (w_c_x(i) + 2 * h_c_x(i) * eta_fin(i)) * deltax;
                 T_l(i+1) = T_l(i) + (1 / (m_dot_CHANNEL * cp_l)) * qdot_g(i) * wall_area; % new liquid temperature [K] (Heister EQ 6.39)
                 
                 % Use moody diagram to find coefficient of friction
@@ -611,7 +611,7 @@ plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Chamber Contour [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
-legend('Channel Width', 'Channel Height', 'Wall Thickness', 'Fin Thickness', 'Chamber Contour','Location','best')
+legend('Channel Width', 'Channel Height', 'Wall Thickness', 'Fin Thickness', 'Chamber Contour','Location','northwest')
 grid on
 
 subplot(2,2,3);
