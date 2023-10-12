@@ -407,10 +407,10 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 % calculate stesses 
                 sigma_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
                 sigma_tt(i) = (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w);
-                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w) / E; % tangential stress
+                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w); % tangential stress
                 %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
-                sigma_lc(i) = CTE*(T_wl(i)-T_l(i));
-                sigma_ll(i) = CTE*(T_wg(i)-T_l(i));
+                sigma_lc(i) = E*CTE*(T_wl(i)-T_l(i));
+                sigma_ll(i) = E*CTE*(T_wg(i)-T_l(i));
 
                 %sigmab = ??? ; % buckling stress
                 sigma_vc(i) = sqrt(sigma_lc(i)^2 + sigma_t(i)^2 - sigma_lc(i)*sigma_t(i));
@@ -635,8 +635,8 @@ figure('Name', 'Structural results')
 subplot(2,2,[1,2])
 hold on
 set(gca, 'FontName', 'Times New Roman')
-plot(x_plot.* 1000, sigma_vl*100,'g',x_plot.* 1000, sigma_vc*100)
-title("Von Mises Strain")
+plot(x_plot.* 1000, sigma_vl*0.000001,'g',x_plot.* 1000, sigma_vc*0.000001)
+title("Von Mises Stress")
 xlabel("Location [mm]")
 ylabel("[MPA]")
 yyaxis right
