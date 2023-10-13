@@ -415,17 +415,12 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 cf = f/4; % friction coefficient
 
                 if i > 1
-                    deltaP = (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)  + .5 * ((v(i)^2) -(v(i-1)^2))); % change in pressure (Bernoulli's equation)
+                    deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)  + .5 * ((v(i)^2) -(v(i-1)^2))); % change in pressure (Bernoulli's equation)
                 else
-                    deltaP = (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % change in pressure (Heister 6.36)
+                    deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % change in pressure (Heister 6.36)
                 end
                 
-                % prepare for next step
-                P_l(i+1) = P_l(i) - deltaP; % Update pressure for next iteration
-                T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
-            end  
-
-            if i <= points % structural calculations
+                % calculate stesses 
                 CTE_current = interp1(CTE(:,1), CTE(:,2), T_wg(i), 'nearest', 'extrap');
                 CTE_liq_side = interp1(CTE(:,1), CTE(:,2), T_wl(i), 'nearest', 'extrap');
 
@@ -449,8 +444,13 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 epsilon_t(i) = (( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current)) / E; % tangential stress
                 epsilon_vc(i) = sqrt(epsilon_lc(i)^2 + epsilon_t(i)^2 - epsilon_lc(i)*epsilon_t(i));
                 epsilon_vl(i) = sqrt(epsilon_ll(i)^2 + epsilon_t(i)^2 - epsilon_ll(i)*epsilon_t(i));
-            end
+                % prepare for next step
+                P_l(i+1) = P_l(i) - deltaP; % Update pressure for next iteration
+                T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
 
+            end  
+            if i < points
+                
             converged = 1;
         end
     end
