@@ -87,12 +87,13 @@ OF = 1.2; % oxidizer/fuel ratio
 % material properties
 properties = readmatrix(pwd + "/bin/material_properties.xlsx");
 k_w = properties(13:end,1:2); % thermal conductivity [W/m-K]
-E = 76E9; % [Pa] 
+E = properties(1:6,9:10); % [Pa] 
 CTE = [properties(1:5,1) properties(1:5,3)]; % [ppm]
 nu = 0.3; % poissons ratio (guess)
 %e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
 roughness_table = readmatrix(pwd + "/bin/surface_roughness.xlsx",'Range','A12:E16');
 e = [roughness_table(2,2), roughness_table(5,2)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
+yield_strength = properties(1:8,1:2);
 
 % Cooling channel inlet initialization
 coolant = 'Water'; %coolant definition
@@ -299,6 +300,8 @@ eta_fin = zeros(1,points);
 biot_fin = zeros(1,points);
 
 % stress matricies
+k_w_current = zeros(1,points);
+yield = zeros(1,points);
 sigma_t = zeros(1,points); % tangential stress
 sigma_tp = zeros(1,points); % tangential stress pressure
 sigma_tt = zeros(1,points); % tangential stress temp
@@ -353,8 +356,8 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
     
         % Step 6: Calculate liquid wall temperature
-        k_w_current = interp1(k_w(:,1), k_w(:,2), T_wg(i), 'nearest', 'extrap');
-        T_wl(i) = T_wg(i) - qdot_g(i) * t_w_x(i) / k_w_current; % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
+        k_w_current(i) = interp1(k_w(:,1), k_w(:,2), T_wg(i), 'nearest', 'extrap');
+        T_wl(i) = T_wg(i) - qdot_g(i) * t_w_x(i) / k_w_current(i); % liquid wall temperature calculated via conduction through wall [K] (Heister EQ 6.29).
 
         % Step 7: Calculate liquid film coefficient
         % run coolprop to get coolant properties
@@ -375,8 +378,8 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         check(i) = pi * (r_interpolated(i) + t_w_x(i) + h_c_x(i)) ^ 2 - pi * (r_interpolated(i) + t_w_x(i)) ^2;
         P_fin = 2 * rib_thickness(i) + 2 * deltax; % Fin perimeter (step distance & channel width)
         A_c_fin(i) = rib_thickness(i) * deltax; % Fin area at current step
-        m_fin = sqrt(h_l(i) * P_fin / (k_w_current * A_c_fin(i))); % Fin m
-        fin_q(i) = sqrt(h_l(i) * P_fin * k_w_current * A_c_fin(i)) * (T_base - T_l(i)) * tanh(m_fin * h_c_x(i)); % Fin heat transfer rate
+        m_fin = sqrt(h_l(i) * P_fin / (k_w_current(i) * A_c_fin(i))); % Fin m
+        fin_q(i) = sqrt(h_l(i) * P_fin * k_w_current(i) * A_c_fin(i)) * (T_base - T_l(i)) * tanh(m_fin * h_c_x(i)); % Fin heat transfer rate
 
         L_c = h_c_x + rib_thickness(i) / 2; % Corrected fin length (relate convection to adiabatic tip condition)
         eta_fin(i) = tanh(m_fin * L_c) / (m_fin * L_c);  % Fin efficiency
@@ -415,21 +418,29 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 cf = f/4; % friction coefficient
 
                 if i > 1
-                    deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)  + .5 * ((v(i)^2) -(v(i-1)^2))); % change in pressure (Bernoulli's equation)
+                    deltaP = (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)  + .5 * ((v(i)^2) -(v(i-1)^2))); % change in pressure (Bernoulli's equation)
                 else
-                    deltaP =   (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % change in pressure (Heister 6.36)
+                    deltaP = (2*cf*(deltax/(hydraulic_D_x(i))) * rho_l(i) *(v(i))^(2)); % change in pressure (Heister 6.36)
                 end
                 
-                % calculate stesses 
+                % prepare for next step
+                P_l(i+1) = P_l(i) - deltaP; % Update pressure for next iteration
+                T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
+            end  
+
+            if i <= points % structural calculations
+                yield(i) = interp1(yield_strength(:,1), yield_strength(:,2), T_wg(i), 'nearest', 'extrap');
+
+                E_current = interp1(E(:,1), E(:,2), T_wg(i), 'nearest', 'extrap');
                 CTE_current = interp1(CTE(:,1), CTE(:,2), T_wg(i), 'nearest', 'extrap');
                 CTE_liq_side = interp1(CTE(:,1), CTE(:,2), T_wl(i), 'nearest', 'extrap');
 
                 sigma_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
-                sigma_tt(i) = (E*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current);
-                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current); % tangential stress
+                sigma_tt(i) = (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i));
+                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)); % tangential stress
                 %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
-                sigma_lc(i) = E*CTE_liq_side*(T_wl(i)-T_l(i));
-                sigma_ll(i) = E*CTE_current*(T_wg(i)-T_l(i));
+                sigma_lc(i) = E_current*CTE_liq_side*(T_wl(i)-T_l(i));
+                sigma_ll(i) = E_current*CTE_current*(T_wg(i)-T_l(i));
 
 
                 %sigmab = ??? ; % buckling stress
@@ -439,18 +450,13 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 % Calculate Strains
                 epsilon_lc(i) = CTE_liq_side*(T_wl(i)-T_l(i));
                 epsilon_ll(i) = CTE_current*(T_wg(i)-T_l(i));  
-                epsilon_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) )  /E;
-                epsilon_tt(i) = (E*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current)  /E;
-                epsilon_t(i) = (( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current)) / E; % tangential stress
+                epsilon_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) )  /E_current;
+                epsilon_tt(i) = (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i))  /E_current;
+                epsilon_t(i) = (( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i))) / E_current; % tangential stress
                 epsilon_vc(i) = sqrt(epsilon_lc(i)^2 + epsilon_t(i)^2 - epsilon_lc(i)*epsilon_t(i));
                 epsilon_vl(i) = sqrt(epsilon_ll(i)^2 + epsilon_t(i)^2 - epsilon_ll(i)*epsilon_t(i));
-                % prepare for next step
-                P_l(i+1) = P_l(i) - deltaP; % Update pressure for next iteration
-                T_wg(i+1) = T_wg(i);  % new gas wall temp guess based on current temp
+            end
 
-            end  
-            if i < points
-                
             converged = 1;
         end
     end
@@ -668,6 +674,7 @@ subplot(2,2,[1,2])
 hold on
 set(gca, 'FontName', 'Times New Roman')
 plot(x_plot.* 1000, sigma_vl*0.000001,'g',x_plot.* 1000, sigma_vc*0.000001)
+plot(x_plot.* 1000, linspace(yield,yield,steps))
 title("Von Mises Stress")
 xlabel("Location [mm]")
 ylabel("[MPA]")
@@ -676,7 +683,7 @@ plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
-legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Chamber Contour','Location','best')
+legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Yield Stress at Max Temperature', 'Chamber Contour','Location','best')
 grid on
 subplot(2,2,3)
 hold on 
@@ -761,8 +768,6 @@ legend("Fin Efficiency", "Aspect Ratio",'Location','best');
 xlabel("Location [mm]")
 hold off
 grid on
-
-
 
 
 
