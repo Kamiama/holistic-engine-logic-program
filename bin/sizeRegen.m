@@ -76,7 +76,7 @@ total_length = chamber_length + converging_length + diverging_length; % total le
 % Propulsion Parameters
 P_c = 250; % chamber pressure [psi] 
 P_e = 17; % exit pressure [psi]
-m_dot = 5 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
+m_dot = 7 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 fuel = 'C3H8O,2propanol'; % fuel definition
 oxidizer = 'O2(L)'; % oxidizer definition
 fuel_weight = 0; % ???  
@@ -105,10 +105,10 @@ coolantdirection = 0; % 1: direction opposite of hot gas flow direction
                         
 % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
 %t_w = 0.0005; % inner wall thickness [m]
-t_w = [.0005 .0005];
-inter_length = .02; % Length where wall thickness will interpolate between chamber and nozzle
+t_w = [.001 .0005];
+%inter_length = .02 ; % Length where wall thickness will interpolate between chamber and nozzle
 h_c = [.0015 .001 .0023]; % channel height [1 min 2] [m]    
-w_c = [.0031 .0008 .0015];% channel width [1 min 2] [m]
+w_c = [.0031 .001 .0015];% channel width [1 min 2] [m]
 num_channels = 62; 
 
 
@@ -117,6 +117,7 @@ num_channels = 62;
 h_c_extra = .001;
 w_c_extra = .001;
 offset_extra = .02;
+inter_length =  converging_length -offset_extra ; % Length where wall thickness will interpolate between chamber and nozzle
 %extra_loc = [chamber_length, chamber_length + converging_length - .011547, chamber_length + converging_length];
 extra_loc = [chamber_length, chamber_length + converging_length - offset_extra, chamber_length + converging_length];
 t_w_c = w_c(1) ; % channel width at torch igniter
@@ -320,7 +321,7 @@ epsilon_vl = zeros(1,points);
 epsilon_tp = zeros(1,points);
 epsilon_tt = zeros(1,points);
 
-% call cea for all area ratios
+%call cea for all area ratios
 i = 1;
 for sub = subsonic_area_ratios
     [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 2, 0, 0, CEA_input_name);
@@ -429,7 +430,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
             end  
 
             if i <= points % structural calculations
-                yield(i) = interp1(yield_strength(:,1), yield_strength(:,2), T_wg(i), 'nearest', 'extrap');
+                yield(i) = interp1(yield_strength(:,1), yield_strength(:,2), T_wg(i), 'linear', 'extrap');
 
                 E_current = interp1(E(:,1), E(:,2), T_wg(i), 'nearest', 'extrap');
                 CTE_current = interp1(CTE(:,1), CTE(:,2), T_wg(i), 'nearest', 'extrap');

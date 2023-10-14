@@ -76,7 +76,7 @@ total_length = chamber_length + converging_length + diverging_length; % total le
 % Propulsion Parameters
 P_c = 250; % chamber pressure [psi] 
 P_e = 17; % exit pressure [psi]
-m_dot = 5 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
+m_dot = 7 * u.LB2KG; % Coolant/fuel mass flow [kg/s], 1.2566
 fuel = 'C3H8O,2propanol'; % fuel definition
 oxidizer = 'O2(L)'; % oxidizer definition
 fuel_weight = 0; % ???  
@@ -87,7 +87,7 @@ OF = 1.2; % oxidizer/fuel ratio
 % material properties
 properties = readmatrix(pwd + "/bin/material_properties.xlsx");
 k_w = properties(13:end,1:2); % thermal conductivity [W/m-K]
-E = properties(1:6,9:10); % [Pa] 
+E = [300 76*10^9; 400 76*10^9]; %properties(1:6,9:10); % [Pa] 
 CTE = [properties(1:5,1) properties(1:5,3)]; % [ppm]
 nu = 0.3; % poissons ratio (guess)
 %e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
@@ -108,7 +108,7 @@ coolantdirection = 0; % 1: direction opposite of hot gas flow direction
 t_w = [.0005 .0005];
 inter_length = .02; % Length where wall thickness will interpolate between chamber and nozzle
 h_c = [.0015 .001 .0023]; % channel height [1 min 2] [m]    
-w_c = [.0031 .0008 .0015];% channel width [1 min 2] [m]
+w_c = [.0031 .001 .0015];% channel width [1 min 2] [m]
 num_channels = 62; 
 
 
@@ -320,7 +320,7 @@ epsilon_vl = zeros(1,points);
 epsilon_tp = zeros(1,points);
 epsilon_tt = zeros(1,points);
 
-% call cea for all area ratios
+%call cea for all area ratios
 i = 1;
 for sub = subsonic_area_ratios
     [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 2, 0, 0, CEA_input_name);
@@ -600,7 +600,6 @@ title("Liquid Film Coefficient [W/m^2-K]")
 grid on
 
 
-
 figure('Name','Water Flow')
 subplot(2,2,[1,2])
 hold on 
@@ -674,7 +673,7 @@ subplot(2,2,[1,2])
 hold on
 set(gca, 'FontName', 'Times New Roman')
 plot(x_plot.* 1000, sigma_vl*0.000001,'g',x_plot.* 1000, sigma_vc*0.000001)
-plot(x_plot.* 1000, linspace(yield,yield,steps))
+plot(x_plot.* 1000, yield)
 title("Von Mises Stress")
 xlabel("Location [mm]")
 ylabel("[MPA]")
@@ -683,7 +682,7 @@ plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
-legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Yield Stress at Max Temperature', 'Chamber Contour','Location','best')
+legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Yield Stress at Temperature', 'Chamber Contour','Location','best')
 grid on
 subplot(2,2,3)
 hold on 
