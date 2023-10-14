@@ -87,7 +87,7 @@ OF = 1.2; % oxidizer/fuel ratio
 % material properties
 properties = readmatrix(pwd + "/bin/material_properties.xlsx");
 k_w = properties(13:end,1:2); % thermal conductivity [W/m-K]
-E = properties(1:6,9:10); % [Pa] 
+E = [300 76*10^9; 400 76*10^9]; %properties(1:6,9:10); % [Pa] 
 CTE = [properties(1:5,1) properties(1:5,3)]; % [ppm]
 nu = 0.3; % poissons ratio (guess)
 %e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
@@ -686,7 +686,7 @@ legend('Von Mises Stress (Lands)','Von Mises Stress (Channels)', 'Yield Stress a
 grid on
 subplot(2,2,3)
 hold on 
-set(gca, 'FontName', 'Times New Roman')s
+set(gca, 'FontName', 'Times New Roman')
 hold on
 plot(x_plot.* 1000, sigma_t*0.000001,"b");
 plot(x_plot.* 1000, sigma_tp*0.000001,"m");
