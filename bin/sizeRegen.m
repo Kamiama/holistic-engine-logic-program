@@ -49,7 +49,7 @@
    %}
 
 %% INITIALIZATION
-clear;
+%clear;
 clc; 
 close all;
 u = convertUnits;
@@ -105,7 +105,7 @@ coolantdirection = 0; % 1: direction opposite of hot gas flow direction
                         
 % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
 %t_w = 0.0005; % inner wall thickness [m]
-t_w = [.001 .0005];
+t_w = [.001 .0005 .001];
 %inter_length = .02 ; % Length where wall thickness will interpolate between chamber and nozzle
 h_c = [.0015 .001 .0023]; % channel height [1 min 2] [m]    
 w_c = [.0031 .001 .0015];% channel width [1 min 2] [m]
@@ -230,6 +230,7 @@ h_c_diverging = ((h_c(3)-h_c(2))/(diverging_length)).*(x_diverging-x_diverging(1
 h_c_x = [h_c_chamber1 h_c_torch_conv h_c_torch_div h_c_chamber2 h_c_converging1 h_c_converging2 h_c_diverging]; % combine channel height vectors
 
 A_x = (w_c_x .* h_c_x); % channel area vector over channel length [m^2]
+AR_channel = w_c_x ./ h_c_x;  % channel aspect ration over channel length
 p_wet_x = 2.*w_c_x + 2 .* h_c_x; % wet perimeter over channel length [m]
 hydraulic_D_x = ((4.*(A_x))./p_wet_x); % bydraulic Diameter over channel length [m]
 
@@ -241,21 +242,28 @@ m_dot_CHANNEL = m_dot / num_channels; % mass flow of channel (EQ 6.31)
 
 % Wall thickness vector
 x_inter_wall = [];
+x_min_wall_section = [];
 x_nozzle_wall = [];
 for i = x
     if ((chamber_length) < i) && (i <= chamber_length + inter_length)
         x_inter_wall = [x_inter_wall i];
     end
-    if(chamber_length + inter_length < i)
+    if((chamber_length + inter_length < i) && (i < chamber_length + converging_length))
+        x_min_wall_section = [x_min_wall_section i];
+    end
+    if(chamber_length + converging_length <= i)
         x_nozzle_wall = [x_nozzle_wall i];
     end
 end
 
 t_w_chamber = t_w(1) * ones(size(x_to_converging));
 t_w_inter = ((t_w(2)-t_w(1))/(inter_length)).*(x_inter_wall -x_inter_wall(1)) ... 
-    + ones(size(inter_length)).*t_w(1); % channel width over converging torch section
-t_w_nozzle = t_w(2) .* ones(size(x_nozzle_wall));
-t_w_x = [t_w_chamber t_w_inter t_w_nozzle];
+    + ones(1, size(x_inter_wall,2)).*t_w(1); % channel width over converging torch section
+t_w_min_wall_section = ones(1,size(x_min_wall_section,2)) .* t_w(2);
+t_w_nozzle = ((t_w(3)-t_w(2))/(diverging_length)).*(x_nozzle_wall -x_nozzle_wall(1)) ... 
+    + ones(1, size(x_nozzle_wall,2)).*t_w(2); 
+t_w_x = [t_w_chamber t_w_inter t_w_min_wall_section t_w_nozzle];
+
 
 %% CHAMBER HEAT TRANSFER CALCULATIONS
 
@@ -313,6 +321,7 @@ sigmab = zeros(1,points); % buckling stress
 sigma_v = zeros(1,points); % von mises stress
 sigma_vl = zeros(1,points); % von mises stress
 sigma_vc = zeros(1,points); % von mises stress
+simga_tp_cold = zeros(1,points); % Pressing channels before hotfire
 epsilon_lc = zeros(1,points);
 epsilon_ll = zeros(1,points); 
 epsilon_t = zeros(1,points);
@@ -437,6 +446,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 CTE_liq_side = interp1(CTE(:,1), CTE(:,2), T_wl(i), 'nearest', 'extrap');
 
                 sigma_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
+                simga_tp_cold(i) =  ( ((P_l(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
                 sigma_tt(i) = (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i));
                 sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)); % tangential stress
                 %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
@@ -470,12 +480,13 @@ end
 [c_star_t, ~, ~, M_t, gamma_t, P_g_t, T_g_t, ~, mu_g_t, Pr_g_t, ~, ~, ~, cp_g_t] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); % ******
 
 % Steps 2 & 3: Set channel inlet properties
-P_l_t = (P_l(length(x_to_throat)) + P_l(length(x_to_throat) + 1) ) / 2; % coolant pressure at throat [Pa] (interpolated)
-T_l_t = (T_l(length(x_to_throat)) + T_l(length(x_to_throat) + 1) ) / 2; % coolant tepemperature at throat [K] (interpolated)
+
+P_l_t = (P_l(size(x_to_throat,2)) + P_l(size(x_to_throat,2) + 1) ) / 2; % coolant pressure at throat [Pa] (interpolated)
+T_l_t = (T_l(size(x_to_throat,2)) + T_l(size(x_to_throat,2) + 1) ) / 2; % coolant tepemperature at throat [K] (interpolated)
 
 % Step 4: Take hot wall temperature guess and initialize loop
 
-T_wg_t = (T_wg(length(x_to_throat)) + T_wg(length(x_to_throat) + 1) ) / 2; % initial guess of wall side temperature at throat [K] (interpolated) 
+T_wg_t = (T_wg(size(x_to_throat,2)) + T_wg(size(x_to_throat,2) + 1) ) / 2; % initial guess of wall side temperature at throat [K] (interpolated) 
 T_wg_mn = 294.15; % minimum temperature bound
 T_wg_mx = 2000; % maximum temperature bound
 
@@ -606,6 +617,7 @@ subplot(2,2,[1,2])
 hold on 
 set(gca, 'FontName', 'Times New Roman')
 plot(x_plot.* 1000, P_l * 1/6894.757)
+plot(x_plot.*1000, P_g *1/6894.757, 'y')
 title("Liquid Pressure Loss")
 xlabel("Location [mm]")
 ylabel("Pressure [PSI]")
@@ -614,7 +626,7 @@ plot(x_plot .* 1000, r_interpolated .* 1000, 'black', 'LineStyle', '-');
 ylabel('Radius [mm]')
 set(gca, 'Ycolor', 'k')
 axis equal;
-legend("Pressure Curve"," Chamber Contour",'Location','best')
+legend("Pressure Curve","Gas Pressure"," Chamber Contour",'Location','best')
 grid on
 
 subplot(2,2,3)
@@ -663,8 +675,8 @@ grid on
 subplot(2,2,4);
 hold on 
 set(gca, 'FontName', 'Times New Roman')
-plot(x_plot.* 1000, A_x .* 1000000);
-title("Channel Area [mm^2]");
+plot(x_plot.* 1000, AR_channel);
+title("Channel Aspect Ratio");
 xlabel("Location [mm]");
 grid on
 
@@ -769,6 +781,8 @@ xlabel("Location [mm]")
 hold off
 grid on
 
+figure("Name","pressing")
+plot(x_plot.*1000, sigma_tp_cold);
 
 
 %         %Step 12: Structural Analysis Checks
