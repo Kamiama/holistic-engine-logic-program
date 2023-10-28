@@ -94,8 +94,6 @@ nu = 0.3; % poissons ratio (guess)
 roughness_table = readmatrix(pwd + "/bin/surface_roughness.xlsx",'Range','A12:E16');
 e = [roughness_table(2,2), roughness_table(5,2)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
 yield_strength = properties(1:8,1:2);
-elongation_break = [properties(1:8,1) properties(1:8,5)];
-N = 20*4;
 
 % Cooling channel inlet initialization
 coolant = 'Water'; %coolant definition
@@ -317,7 +315,6 @@ elong = zeros(1,points);
 E_current = zeros(1,points);
 CTE_current = zeros(1,points);
 CTE_liq_side = zeros(1,points);
-epsilon_emax = zeros(1,points);
 
 sigma_t = zeros(1,points); % tangential stress
 sigma_tp = zeros(1,points); % tangential stress pressure
@@ -329,7 +326,7 @@ sigmab = zeros(1,points); % buckling stress
 sigma_v = zeros(1,points); % von mises stress
 sigma_vl = zeros(1,points); % von mises stress
 sigma_vc = zeros(1,points); % von mises stress
-sigma_tp_cold = zeros(1,points); % Pressing channels before hotfire
+simga_tp_cold = zeros(1,points); % Pressing channels before hotfire
 epsilon_lc = zeros(1,points);
 epsilon_ll = zeros(1,points); 
 epsilon_t = zeros(1,points);
@@ -411,6 +408,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         % Step 8.5: Fin heat transfer, adiabatic tip
         T_base = T_wl(i); % Temperature at fin base
         rib_thickness(i) = ((pi * (r_interpolated(i) + t_w_x(i) + h_c_x(i)) ^ 2 - pi * (r_interpolated(i) + t_w_x(i)) ^ 2 - h_c_x(i) * w_c_x(i) * num_channels) / num_channels) / h_c_x(i);
+        check(i) = pi * (r_interpolated(i) + t_w_x(i) + h_c_x(i)) ^ 2 - pi * (r_interpolated(i) + t_w_x(i)) ^2;
         P_fin = 2 * rib_thickness(i) + 2 * deltax; % Fin perimeter (step distance & channel width)
         A_c_fin(i) = rib_thickness(i) * deltax; % Fin area at current step
         m_fin = sqrt(h_l(i) * P_fin / (k_w_current(i) * A_c_fin(i))); % Fin m
@@ -478,6 +476,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
                 sigma_tp_cold(i) =  ( ((P_l(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
                 sigma_tt(i) = (E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i));
                 sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)); % tangential stress
+                %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
                 sigma_lc(i) = E_current(i)*(CTE_liq_side(i)*(T_wl(i)-T_l(i)) + ((CTE_liq_side(i)*deltaT1(i))/(2*(1-nu))));
                 sigma_ll(i) = E_current(i)*(CTE_current(i)*(T_wg(i)-T_l(i)) + ((CTE_current(i)*deltaT1(i))/(2*(1-nu))));
 

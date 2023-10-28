@@ -25,7 +25,7 @@ A_c = pi * R_c ^ 2;
 channelMdot = 1.2364 * u.LB2KG; % Fuel 
 
 % Reference diameters
-velo = 1; 
+velo = 2; 
 hydraulic_D = sqrt((channelMdot / (velo * 786)) / pi) * 2;   % LOx 
 
 % Injector definition  

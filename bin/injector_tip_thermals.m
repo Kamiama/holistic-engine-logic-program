@@ -105,6 +105,7 @@ end
 %% Outputs
 fprintf("Pintle Tip\n")
 fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg)
+fprintf("Liquid Side Wall Temp [K]: %0.2f\n", T_wl)
 fprintf("Gas Heat Transfer Coefficient: %0.2f\n", h_g)
 fprintf("Liquid Heat Transfer Coefficient: %0.2f\n", h_l)
 fprintf("Gas Temp: %0.2f\n", Tc_ns)
