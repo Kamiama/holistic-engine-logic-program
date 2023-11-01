@@ -12,7 +12,7 @@
  problem rocket fr
      p(bar) = 17.2369
      o/f = 1.2
-     sup = 2.7286
+     sup = 1
  reac
      fuel = C3H8O,2propanol t(K) = 273.150
      ox = O2(L) t(K) = 90.170
@@ -30,7 +30,7 @@
 
  SUBSONIC AREA RATIOS =
 
- SUPERSONIC AREA RATIOS =     2.7286
+ SUPERSONIC AREA RATIOS =     1.0000
 
  NFZ=  1  Mdot/Ac= 0.000000E+00  Ac/At= 0.000000E+00
 
@@ -153,39 +153,39 @@
  O/F=    1.20000  %FUEL= 45.454545  R,EQ.RATIO= 1.815773  PHI,EQ.RATIO= 1.996763
 
                  CHAMBER   THROAT     EXIT
- Pinf/P            1.0000   1.7966   14.443
- P, BAR            17.237   9.5944   1.1934
- T, K             2662.88  2379.37  1564.38
- RHO, KG/CU M    1.4645 0 9.1228-1 1.7259-1
- H, KJ/KG        -2300.28 -2952.57 -4748.01
- U, KJ/KG        -3477.30 -4004.27 -5439.48
- G, KJ/KG        -36728.2 -33714.9 -24973.6
+ Pinf/P            1.0000   1.7966   1.7966
+ P, BAR            17.237   9.5944   9.5944
+ T, K             2662.88  2379.37  2379.37
+ RHO, KG/CU M    1.4645 0 9.1228-1 9.1228-1
+ H, KJ/KG        -2300.28 -2952.57 -2952.57
+ U, KJ/KG        -3477.30 -4004.27 -4004.27
+ G, KJ/KG        -36728.2 -33714.9 -33714.9
  S, KJ/(KG)(K)    12.9288  12.9288  12.9288
 
  M, (1/n)          18.811   18.811   18.811
- Cp, KJ/(KG)(K)    2.3197   2.2804   2.1078
- GAMMAs            1.2354   1.2404   1.2653
- SON VEL,M/SEC     1205.9   1142.2    935.4
- MACH NUMBER        0.000    1.000    2.365
+ Cp, KJ/(KG)(K)    2.3197   2.2804   2.2804
+ GAMMAs            1.2354   1.2404   1.2404
+ SON VEL,M/SEC     1205.9   1142.2   1142.2
+ MACH NUMBER        0.000    1.000    1.000
 
  TRANSPORT PROPERTIES (GASES ONLY)
    CONDUCTIVITY IN UNITS OF MILLIWATTS/(CM)(K)
 
- VISC,MILLIPOISE  0.84553  0.77932  0.57512
+ VISC,MILLIPOISE  0.84553  0.77932  0.77932
 
   WITH FROZEN REACTIONS
 
- Cp, KJ/(KG)(K)    2.3197   2.2804   2.1078
- CONDUCTIVITY      3.3403   3.0090   2.0235
- PRANDTL NUMBER    0.5872   0.5906   0.5991
+ Cp, KJ/(KG)(K)    2.3197   2.2804   2.2804
+ CONDUCTIVITY      3.3403   3.0090   3.0090
+ PRANDTL NUMBER    0.5872   0.5906   0.5906
 
  PERFORMANCE PARAMETERS
 
- Ae/At                      1.0000   2.7286
+ Ae/At                      1.0000   1.0000
  CSTAR, M/SEC               1654.2   1654.2
- CF                         0.6905   1.3375
- Ivac, M/SEC                2063.0   2525.1
- Isp, M/SEC                 1142.2   2212.6
+ CF                         0.6905   0.6905
+ Ivac, M/SEC                2063.0   2063.0
+ Isp, M/SEC                 1142.2   1142.2
 
  MOLE FRACTIONS
 

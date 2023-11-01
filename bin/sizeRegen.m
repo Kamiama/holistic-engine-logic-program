@@ -57,7 +57,7 @@ CEA_input_name = 'AAAAAA';
 
 %% SIMULATION PARAMETERS (INPUTS)
 plots = 0; %Do ansys or not ???? DUmb name
-steps = 100; % Number of steps along chamber (Change resolution of simulation)
+steps = 5000; % Number of steps along chamber (Change resolution of simulation)
 qdot_tolerance = 0.0001; % set heattransfer convergence tolerance
 
 
@@ -87,13 +87,17 @@ OF = 1.2; % oxidizer/fuel ratio
 % material properties
 properties = readmatrix(pwd + "/bin/material_properties.xlsx");
 k_w = properties(13:end,1:2); % thermal conductivity [W/m-K]
-E = [300 76*10^9; 400 76*10^9]; %properties(1:6,9:10); % [Pa] 
+%E = [300 76*10^9; 400 76*10^9]; %properties(1:6,9:10); % [Pa] 
+E = [properties(1:6, 9) properties(1:6,10)];
 CTE = [properties(1:5,1) properties(1:5,3)]; % [ppm]
 nu = 0.3; % poissons ratio (guess)
 %e = 24 * 0.001; % surface roughness (mm) [micrometer*conversion]
 roughness_table = readmatrix(pwd + "/bin/surface_roughness.xlsx",'Range','A12:E16');
 e = [roughness_table(2,2), roughness_table(5,2)] .* 0.001; %Surface roughness (mm) [micrometer*conversion] [45, 90]
 yield_strength = properties(1:8,1:2);
+elongation_break = [properties(1:8,1) properties(1:8,5)];
+%elongation_break = [300 .3; 400 .3];
+N = 20*4;
 
 % Cooling channel inlet initialization
 coolant = 'Water'; %coolant definition
@@ -105,7 +109,7 @@ coolantdirection = 0; % 1: direction opposite of hot gas flow direction
                         
 % channel geometry: (1: chamber) (min: throat) (2: nozzle end)
 %t_w = 0.0005; % inner wall thickness [m]
-t_w = [.001 .0005 .001];
+t_w = [.001 .00075 .001];
 %inter_length = .02 ; % Length where wall thickness will interpolate between chamber and nozzle
 h_c = [.0015 .001 .0023]; % channel height [1 min 2] [m]    
 w_c = [.0031 .001 .0015];% channel width [1 min 2] [m]
@@ -117,13 +121,14 @@ num_channels = 62;
 h_c_extra = .001;
 w_c_extra = .001;
 offset_extra = .02;
-inter_length =  converging_length -offset_extra ; % Length where wall thickness will interpolate between chamber and nozzle
+inter_length =  converging_length - offset_extra; % Length where wall thickness will interpolate between chamber and nozzle
 %extra_loc = [chamber_length, chamber_length + converging_length - .011547, chamber_length + converging_length];
 extra_loc = [chamber_length, chamber_length + converging_length - offset_extra, chamber_length + converging_length];
 t_w_c = w_c(1) ; % channel width at torch igniter
 t_h_c =  h_c(1); % channel height at torch igniter
 torch_loc = [2.2 3.2 3.7] .* 0.0254; % location of torch changing area [mm] [inch * conversion] [1 min 2]
 
+heatflux_factor = 1;
 
 %% Parse variables && initial calculations
 
@@ -291,15 +296,15 @@ h_g = zeros(1, points);     % gas film coefficient
 sigma = zeros(1, points);   % film coefficient correction factor
 h_l = zeros(1, points);     % liquid film coefficient
 
-% axial combustion property matrices
-c_star = zeros(1, points);  % characteristic velocity
-M = zeros(1, points);       % mach number
-gamma = zeros(1, points);   % ratio of specific heats
-P_g = zeros(1, points);     % combustion pressure
-T_g = zeros(1, points);     % combustion temperature
-mu_g = zeros(1, points);    % combustion viscosity 
-Pr_g = zeros(1, points);    % combustion prantl number
-cp_g = zeros(1, points);    % combustion coefficient of pressure ???
+% % axial combustion property matrices
+% c_star = zeros(1, points);  % characteristic velocity
+% M = zeros(1, points);       % mach number
+% gamma = zeros(1, points);   % ratio of specific heats
+% P_g = zeros(1, points);     % combustion pressure
+% T_g = zeros(1, points);     % combustion temperature
+% mu_g = zeros(1, points);    % combustion viscosity 
+% Pr_g = zeros(1, points);    % combustion prantl number
+% cp_g = zeros(1, points);    % combustion coefficient of pressure ???
 
 % fin matricies
 rib_thickness = zeros(1,points);
@@ -311,6 +316,12 @@ biot_fin = zeros(1,points);
 % stress matricies
 k_w_current = zeros(1,points);
 yield = zeros(1,points);
+elong = zeros(1,points);
+E_current = zeros(1,points);
+CTE_current = zeros(1,points);
+CTE_liq_side = zeros(1,points);
+
+epsilon_emax = zeros(1,points);
 sigma_t = zeros(1,points); % tangential stress
 sigma_tp = zeros(1,points); % tangential stress pressure
 sigma_tt = zeros(1,points); % tangential stress temp
@@ -321,7 +332,7 @@ sigmab = zeros(1,points); % buckling stress
 sigma_v = zeros(1,points); % von mises stress
 sigma_vl = zeros(1,points); % von mises stress
 sigma_vc = zeros(1,points); % von mises stress
-simga_tp_cold = zeros(1,points); % Pressing channels before hotfire
+sigma_tp_cold = zeros(1,points); % Pressing channels before hotfire
 epsilon_lc = zeros(1,points);
 epsilon_ll = zeros(1,points); 
 epsilon_t = zeros(1,points);
@@ -330,17 +341,35 @@ epsilon_vl = zeros(1,points);
 epsilon_tp = zeros(1,points);
 epsilon_tt = zeros(1,points);
 
+epsilon_tota = zeros(1,points);
+epsilon_tott = zeros(1,points);
+epsilon_pa = zeros(1,points);
+epsilon_pt = zeros(1,points);
+epsilon_peff = zeros(1,points);
+epsilon_cs = zeros(1,points);
+MS = zeros(1,points);
+num_fires = zeros(1,points);
+epsilon_toteff = zeros(1,points);
+sigma_eff = zeros(1,points);
+sigma_a = zeros(1,points);
+sigma_t2 = zeros(1,points);
+epsilon_cs_tot = zeros(1,points);
+MS1 = zeros(1,points);
+
+deltaT1 = zeros(1,points);
+deltaT2 = zeros(1,points);
+
 %call cea for all area ratios
-i = 1;
-for sub = subsonic_area_ratios
-    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 2, 0, 0, CEA_input_name);
-    i = i + 1;
-end
-i = size(subsonic_area_ratios, 2) + 1;
-for sup = supersonic_area_ratios
-    [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, sup, 2, 0, 0, CEA_input_name);
-    i = i + 1;
-end
+% i = 1;
+% for sub = subsonic_area_ratios
+%     [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, sub, 0, 2, 0, 0, CEA_input_name);
+%     i = i + 1;
+% end
+% i = size(subsonic_area_ratios, 2) + 1;
+% for sup = supersonic_area_ratios
+%     [c_star(i), ~, ~, M(i), gamma(i), P_g(i), T_g(i), ~, mu_g(i), Pr_g(i), ~, ~, ~, cp_g(i)] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, sup, 2, 0, 0, CEA_input_name);
+%     i = i + 1;
+% end
 
 % Steps 2 & 3: Set channel inlet properties
 P_l(1) = inlet_pressure;
@@ -360,7 +389,7 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
     while ~(converged)
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
         sigma(i) = (.5 * T_wg(i) / T_g(1) * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) + .5) ^ -.68 * (1 + (gamma(i) - 1) / 2 * M(i) ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g(i) = (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_c / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma(i); % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        h_g(i) = heatflux_factor * (0.026 / D_t ^ 0.2) * (mu_g(i) ^ 0.2 * cp_g(i) / Pr_g(i) ^ 0.6) * (P_c / c_star(i)) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (1 / A_ratio(i)) ^ .9 * sigma(i); % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
         r = Pr_g(i) ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
         T_r = T_g(i) * (1 + (gamma(i) - 1) / 2 * r * M(i) ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g(i) = h_g(i) * (T_r - T_wg(i)); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
@@ -385,7 +414,6 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
         % Step 8.5: Fin heat transfer, adiabatic tip
         T_base = T_wl(i); % Temperature at fin base
         rib_thickness(i) = ((pi * (r_interpolated(i) + t_w_x(i) + h_c_x(i)) ^ 2 - pi * (r_interpolated(i) + t_w_x(i)) ^ 2 - h_c_x(i) * w_c_x(i) * num_channels) / num_channels) / h_c_x(i);
-        check(i) = pi * (r_interpolated(i) + t_w_x(i) + h_c_x(i)) ^ 2 - pi * (r_interpolated(i) + t_w_x(i)) ^2;
         P_fin = 2 * rib_thickness(i) + 2 * deltax; % Fin perimeter (step distance & channel width)
         A_c_fin(i) = rib_thickness(i) * deltax; % Fin area at current step
         m_fin = sqrt(h_l(i) * P_fin / (k_w_current(i) * A_c_fin(i))); % Fin m
@@ -440,32 +468,66 @@ for i = 1:points % where i is the position along the chamber (1 = injector, end 
 
             if i <= points % structural calculations
                 yield(i) = interp1(yield_strength(:,1), yield_strength(:,2), T_wg(i), 'linear', 'extrap');
+                E_current(i) = interp1(E(:,1), E(:,2), T_wg(i), 'linear', 'extrap');
+                CTE_current(i) = interp1(CTE(:,1), CTE(:,2), T_wg(i), 'nearest', 'extrap');
+                CTE_liq_side(i) = interp1(CTE(:,1), CTE(:,2), T_wl(i), 'nearest', 'extrap');
+                elong(i) = interp1(elongation_break(:,1), elongation_break(:,2), T_wg(i),'linear','extrap');
+                epsilon_emax(i) = ((yield(i)*1000000)/ E_current(i));
 
-                E_current = interp1(E(:,1), E(:,2), T_wg(i), 'nearest', 'extrap');
-                CTE_current = interp1(CTE(:,1), CTE(:,2), T_wg(i), 'nearest', 'extrap');
-                CTE_liq_side = interp1(CTE(:,1), CTE(:,2), T_wl(i), 'nearest', 'extrap');
+                deltaT1(i) = T_wg(i) - T_wl(i);
+                deltaT2(i) = ((T_wg(i) + T_wl(i))/2) - T_l(i);
 
                 sigma_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
-                simga_tp_cold(i) =  ( ((P_l(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
-                sigma_tt(i) = (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i));
-                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)); % tangential stress
+                sigma_tp_cold(i) =  ( ((P_l(i))/2).*((w_c_x(i)./t_w_x(i)).^2) );
+                sigma_tt(i) = (E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i));
+                sigma_t(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)); % tangential stress
                 %sigma_l(i) = E*CTE*(T_wg(i)-T_wl(i)); % longitudinal stress (The temperatures here are wrong and I'm not sure this is applicable to rectagular channels
-                sigma_lc(i) = E_current*CTE_liq_side*(T_wl(i)-T_l(i));
-                sigma_ll(i) = E_current*CTE_current*(T_wg(i)-T_l(i));
+                sigma_lc(i) = E_current(i)*(CTE_liq_side(i)*(T_wl(i)-T_l(i)) + ((CTE_liq_side(i)*deltaT1(i))/(2*(1-nu))));
+                sigma_ll(i) = E_current(i)*(CTE_current(i)*(T_wg(i)-T_l(i)) + ((CTE_current(i)*deltaT1(i))/(2*(1-nu))));
 
 
                 %sigmab = ??? ; % buckling stress
                 sigma_vc(i) = sqrt(sigma_lc(i)^2 + sigma_t(i)^2 - sigma_lc(i)*sigma_t(i));
                 sigma_vl(i) = sqrt(sigma_ll(i)^2 + sigma_t(i)^2 - sigma_ll(i)*sigma_t(i));
 
-                % Calculate Strains
-                epsilon_lc(i) = CTE_liq_side*(T_wl(i)-T_l(i));
-                epsilon_ll(i) = CTE_current*(T_wg(i)-T_l(i));  
-                epsilon_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) )  /E_current;
-                epsilon_tt(i) = (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i))  /E_current;
-                epsilon_t(i) = (( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current*CTE_current*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i))) / E_current; % tangential stress
+                % Calculate total Strains
+                epsilon_lc(i) = ((CTE_liq_side(i)*deltaT1(i))/(2*(1-nu))) + CTE_liq_side(i)*(T_wl(i)-T_l(i));
+                epsilon_ll(i) = ((CTE_current(i)*deltaT1(i))/(2*(1-nu))) + CTE_current(i)*(T_wg(i)-T_l(i));  
+                epsilon_tp(i) = ( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) )  /E_current(i);
+                epsilon_tt(i) = ((E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i)))  /E_current(i);
+                epsilon_t(i) = (( ((P_l(i)-P_g(i))/2).*((w_c_x(i)./t_w_x(i)).^2) ) + (E_current(i)*CTE_current(i)*qdot_g(i)*t_w_x(i))/(2*(1-nu)*k_w_current(i))) / E_current(i); % tangential stress
                 epsilon_vc(i) = sqrt(epsilon_lc(i)^2 + epsilon_t(i)^2 - epsilon_lc(i)*epsilon_t(i));
                 epsilon_vl(i) = sqrt(epsilon_ll(i)^2 + epsilon_t(i)^2 - epsilon_ll(i)*epsilon_t(i));
+
+
+
+                % New structural calcs !?
+                
+                epsilon_tota(i) = ((CTE_current(i)*deltaT1(i))/(2*(1-nu))) + CTE_current(i) * deltaT2(i); 
+                epsilon_tott(i) = epsilon_t(i);
+                epsilon_toteff(i) = (2/sqrt(3)) * sqrt(((epsilon_tott(i)^2)+ epsilon_tott(i)*epsilon_tota(i) + (epsilon_tota(i))^2));
+                sigma_a(i) = E_current(i) * epsilon_tota(i);
+                sigma_t2(i) = E_current(i) * epsilon_tott(i);
+
+
+                epsilon_pa(i) = epsilon_tota(i) - epsilon_emax(i);
+                epsilon_pt(i) = epsilon_tott(i) - epsilon_emax(i);
+                if epsilon_pa(i) < 0
+                    epsilon_pa(i) = 0;
+                end 
+                if epsilon_pt(i) < 0
+                    epsilon_pt(i) = 0;
+                end
+                epsilon_peff(i) = (2/sqrt(3)) * sqrt(((epsilon_pt(i)^2) + epsilon_pt(i)*epsilon_pa(i) + (epsilon_pa(i))^2));
+                epsilon_cs(i) = ((elong(i)*(N^(-1/2)))/2);
+                epsilon_cs_tot(i) = epsilon_cs(i) + 2*epsilon_emax(i);
+                MS(i) = epsilon_cs(i) / (2*epsilon_peff(i));
+                MS1(i) = epsilon_cs_tot(i) / (2*epsilon_toteff(i));
+                num_fires(i) = 1/4 * ((elong(i)/(4*epsilon_peff(i)))^(2));
+                sigma_eff(i) = E_current(i) * epsilon_toteff(i);
+                sigma_a(i) = E_current(i) * epsilon_tota(i);
+                sigma_t2(i) = E_current(i) * epsilon_tott(i);
+                MS2(i) = epsilon_cs(i)/(2*epsilon_toteff(i));
             end
 
             converged = 1;
@@ -551,6 +613,16 @@ gas_p = [x; P_g]';
 liquid_p = [x; P_l]';
 
 %% PLOT OUTPUTS
+overall_MS = min(MS);
+Engine_life = min(num_fires);
+yield_SF = min(yield)/(max(sigma_vl)*.000001);
+fprintf("Margin of saftey for engine life of %.02f hotfires: %.02f\n", N/4, overall_MS)
+fprintf("Engine life (hotfires): %.02f\n", Engine_life)
+fprintf("Saftey factor to yield: %.02f\n", yield_SF)
+
+
+
+
 figure('Name', 'Temperature Plot');
 hold on;
 set(gca, 'FontName', 'Times New Roman')
@@ -782,7 +854,17 @@ hold off
 grid on
 
 figure("Name","pressing")
-plot(x_plot.*1000, sigma_tp_cold);
+plot(x_plot.*1000, sigma_tp_cold*0.000001);
+title("Cold water pressing stress")
+ylabel("MPA");
+xlabel("Location [mm]");
+
+figure("Name","comparison")
+plot(x_plot.*1000, epsilon_ll, x_plot.*1000, epsilon_tota)
+legend("Definition1","Definition2")
+figure("Name","effl")
+plot(x_plot.*1000, epsilon_toteff, x_plot.*1000, epsilon_cs)
+legend("total effective strain", "allowable cyclic strain")
 
 
 %         %Step 12: Structural Analysis Checks
