@@ -7,7 +7,6 @@ R_t = 0.7335 * u.IN2M;
 A_t = pi * R_t ^ 2;
 P_c = 250;
 P_e = 17;
-A_c = 11.0447 * u.IN2M ^ 2; 
 fuel = 'C3H8O,2propanol';
 fuel_weight = 0;
 fuel_temp = 293.15;
@@ -19,32 +18,34 @@ CEA_input_name = 'test';
 % Engine geometry definition
 D_t = R_t * 2; 
 R_of_curve = 1.5 * D_t / 2; % [m]
+R_c = 1.875 * u.IN2M;
+A_c = pi * R_c ^ 2; 
 
 % Reference diameters
-hydraulic_D = 0.7 * u.IN2M;   % LOx 
+hydraulic_D = 0.5 * u.IN2M;   % LOx 
 
 % Find mass flow per channel
 channelMdot = 1.4837 * u.LB2KG; % ox
 
 % Injector definition  
 t_w = 0.001;  % [m]
-dP_Pc = 0.5194; 
+dP_Pc = 0.25;
 P_l = P_c / (1 - dP_Pc) * u.PSI2PA;    % [Pa]
 T_l = 90;     % [K]
 
 % Iteration initialization
 T_wg = 1000; % initial guess of wall side temperature [K]
-steps = 100;
-distance = 0.143764; 
+steps = 1;
+distance = 0.01; 
 delta_x = distance/steps; 
 
 % wall material properties
-k_w = 355; % Thermal Conductivity of Wall [W/m-K]
+k_w = 396; % Thermal Conductivity of Wall [W/m-K]
 
 % CEA
 P_c = P_c * u.PSI2PA;
-[~, ~, ~, ~, ~, ~, Tc_ns, ~, ~, ~, ~, ~, ~, ~] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 1, 0, 0, CEA_input_name); 
-[c_star, ~, ~, M, gamma, P_g, T_g, ~, mu_g, Pr_g, ~, ~, ~, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); 
+[c_star, ~, ~, M, gamma, P_g, Tc_ns, ~, mu_g, Pr_g, ~, ~, ~, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 1, 0, 0, CEA_input_name); 
+% [c_star, ~, ~, M, gamma, P_g, T_g, ~, mu_g, Pr_g, ~, ~, ~, cp_g] = RunCEA(P_c, P_e, fuel, fuel_weight, fuel_temp, oxidizer, oxidizer_temp, OF, 0, 0, 2, 0, 0, CEA_input_name); 
 
 qdot_tolerance = 0.0001;
 
@@ -56,9 +57,9 @@ for i = 1:steps
     while ~(converged)
         % Step 5: Calculate gas film coefficient and gas-side convective heat flux
         sigma = (.5 * T_wg / Tc_ns * (1 + (gamma - 1) / 2 * M ^ 2) + .5) ^ -.68 * (1 + (gamma - 1) / 2 * M ^ 2) ^ -.12; % film coefficient correction factor [N/A] (Huzel & Huang 86).
-        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_c / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_t) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
+        h_g = (0.026 / D_t ^ 0.2) * (mu_g ^ 0.2 * cp_g / Pr_g ^ 0.6) * (P_c / c_star) ^ 0.8 * (D_t / R_of_curve) ^ 0.1 * (A_t / A_c) ^ .9 * sigma; % gas film coefficient [W/m^2-K] - bartz equation (Huzel & Huang 86).
         r = Pr_g ^ (1 / 3); % recovery factor for a turbulent free boundary layer [N/A] - biased towards larger engines, very small engines should use Pr^.5 (Heister Table 6.2).
-        T_r = T_g * (1 + (gamma - 1) / 2 * r * M ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
+        T_r = Tc_ns * (1 + (gamma - 1) / 2 * r * M ^ 2); % recovery temperature [K] - corrects for compressible boundry layers (Heister EQ 6.15). 
         qdot_g = h_g * (T_r - T_wg); % gas convective heat flux [W/m^2] (Heister EQ 6.16).
         
         % Step 6: Calculate liquid wall temperature
@@ -101,6 +102,14 @@ for i = 1:steps
     end
 end
 
-fprintf("Pintle Tip Gas Side Wall Temp [K]: %0.2f\n", T_wg)
+%% Outputs
+fprintf("Pintle Tip\n")
+fprintf("Gas Side Wall Temp [K]: %0.2f\n", T_wg)
+fprintf("Liquid Side Wall Temp [K]: %0.2f\n", T_wl)
+fprintf("Gas Heat Transfer Coefficient: %0.2f\n", h_g)
+fprintf("Liquid Heat Transfer Coefficient: %0.2f\n", h_l)
+fprintf("Gas Temp: %0.2f\n", Tc_ns)
+fprintf("Ox Temp: %0.2f\n", T_l)
+
 
 
